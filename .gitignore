@@ -1,58 +1,58 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+### Frontend Files ###
 
+# Dependencies
+/frontend/node_modules
+/frontend/.pnp
+/frontend/.pnp.js
+/frontend/.yarn/install-state.gz
 
-## NextJS Files
+# Testing
+/frontend/coverage
 
-# dependencies
-frontend/node_modules
-frontend/.pnp
-frontend/.pnp.js
-frontend/.yarn/install-state.gz
+# Next.js build output
+/frontend/.next/
+/frontend/out/
 
-# testing
-frontend/coverage
+# Production build
+/frontend/build
 
-# next.js
-frontend/.next/
-frontend/out/
+# Miscellaneous files
+/frontend/.DS_Store
+/frontend/*.pem
 
-# production
-frontend/build
+# Debug logs
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
 
-# misc
-frontend/.DS_Store
-frontend/*.pem
+# Local environment files
+/frontend/.env*.local
 
-# debug
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
+# Vercel deployment files
+/frontend/.vercel
 
-# local env files
-frontend/.env*.local
+# TypeScript build info
+/frontend/*.tsbuildinfo
+/frontend/next-env.d.ts
 
-# vercel
-frontend/.vercel
+### Solidity Files ###
 
-# typescript
-frontend/*.tsbuildinfo
-frontend/next-env.d.ts
+# Foundry build output (cache and artifacts)
+/smart-contracts/cache/
+/smart-contracts/out/
 
+# Exclude forge-std library (uncomment if tracked by Git)
+/smart-contracts/lib/forge-std
 
-## Solidity Files
+# Ignore development broadcast logs
+/smart-contracts/broadcast/
 
+# Ignore specific broadcast logs by network ID (if necessary)
+# /smart-contracts/broadcast/*/31337/
+# /smart-contracts/broadcast/**/dry-run/
 
-# Compiler files
-smart-contracts/cache/
-smart-contracts/out/
+# Documentation
+/smart-contracts/docs/
 
-# Ignores development broadcast logs
-smart-contracts/!/broadcast
-smart-contracts/broadcast/*/31337/
-smart-contracts/broadcast/**/dry-run/
-
-# Docs
-smart-contracts/docs/
-
-# Dotenv file
-smart-contracts/.env
+# Environment files
+/smart-contracts/.env
