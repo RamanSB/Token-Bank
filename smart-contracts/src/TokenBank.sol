@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.19;
+import {IERC20} from "../lib/forge-std/src/interfaces/IERC20.sol";
 
-interface IERC20 {
+// TODO: Remove this as forge-std library has an IERC20 interface.
+// Keep this for now so I can ingrain the ERC20 Interface in my head.
+/* interface IERC20 {
     function totalSupply() external view returns (uint256);
     function balanceOf(address addr) external view returns (uint256);
     function transfer(
@@ -26,7 +29,7 @@ interface IERC20 {
         address indexed spender,
         uint256 value
     );
-}
+} */
 
 contract TokenBank {
     event TokenBank__TokenDeposited(
@@ -37,6 +40,7 @@ contract TokenBank {
 
     error TokenBank__InvalidERC20Token();
     error TokenBank__WithdrawerIsNotOwner();
+    error TokenBank__DepositorHasInsufficientBalance();
 
     address immutable bankOwner;
     address[] s_users;
@@ -55,7 +59,13 @@ contract TokenBank {
     function depositToken(
         address erc20TokenAddress,
         uint256 amount
-    ) external payable {}
+    ) external payable returns (bool) {
+        if (IERC20(erc20TokenAddress).balanceOf(msg.sender) < amount) {
+            revert TokenBank__DepositorHasInsufficientBalance();
+        }
+
+        return true;
+    }
 
     function withdrawToken(
         address erc20TokenAddress,
@@ -72,5 +82,12 @@ contract TokenBank {
     ) internal view returns (uint256) {
         IERC20 token = IERC20(erc20TokenAddress);
         return token.balanceOf(msg.sender);
+    }
+
+    function getTokenBalanceByAddress(
+        address user,
+        address erc20TokenAddress
+    ) external view returns (uint256) {
+        return s_tokenBalanceByAddress[user][erc20TokenAddress];
     }
 }
