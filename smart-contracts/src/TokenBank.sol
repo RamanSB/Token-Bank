@@ -16,8 +16,15 @@ contract TokenBank {
     error TokenBank__DepositorHasInsufficientAllowance();
     error TokenBank__WithdrawlAmountExceedsDepositAmount();
 
-    address immutable bankOwner;
+    modifier ReEntrancyGuard() {
+        require(!locked, "No re-entrancy");
+        locked = true;
+        _;
+        locked = false;
+    }
 
+    bool internal locked;
+    address immutable bankOwner;
     // Track users address to (tokens stored: token address - balance stored).
     mapping(address => mapping(address => uint256)) s_tokenBalanceByAddress;
     mapping(address => address[]) s_depositedTokensByAddress;
@@ -98,23 +105,26 @@ contract TokenBank {
         return true;
     }
 
-    function withdrawAll() external returns (bool) {
+    function withdrawAll() external ReEntrancyGuard returns (bool) {
+        // Not adhering to CEI - so leverage ReEntrancy Guard.
         uint256 depositedTokenCount = s_depositedTokensByAddress[msg.sender]
             .length;
+
         for (uint256 i = 0; i < depositedTokenCount; i++) {
             address tokenAddress = s_depositedTokensByAddress[msg.sender][i];
             uint256 maxWithdrawlAmount = s_tokenBalanceByAddress[msg.sender][
                 tokenAddress
             ];
-            // TODO: Come up with a smarter way to reset the state in for loop
+
             s_tokenBalanceByAddress[msg.sender][tokenAddress] = 0;
-            s_depositedTokensByAddress[msg.sender][i] = address(0);
             bool success = IERC20(tokenAddress).transfer(
                 msg.sender,
                 maxWithdrawlAmount
             );
             require(success, "Transaction Failed");
         }
+
+        delete s_depositedTokensByAddress[msg.sender];
         return true;
     }
 

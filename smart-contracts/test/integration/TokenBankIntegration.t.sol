@@ -118,12 +118,22 @@ contract TestTokenBank is Test {
             assertEq(depositedTokens[i], expectedDepositedTokens[i]);
         }
         // when - attempting to withdraw all
-
         tokenBank.withdrawAll();
+
         // then
         depositedTokens = tokenBank.getDepositedTokenAddressesByUser(
             testAddress
         );
         assertEq(depositedTokens.length, 0);
+
+        for (uint i = 0; i < expectedDepositedTokens.length; i++) {
+            assertEq(
+                tokenBank.getTokenBalanceByAddress(
+                    testAddress,
+                    expectedDepositedTokens[i]
+                ),
+                0
+            );
+        }
     }
 }
