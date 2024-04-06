@@ -28,6 +28,7 @@ contract TokenBank {
     // Track users address to (tokens stored: token address - balance stored).
     mapping(address => mapping(address => uint256)) s_tokenBalanceByAddress;
     mapping(address => address[]) s_depositedTokensByAddress;
+    mapping(address => uint256) s_etherBalanceByAddress;
 
     constructor() {
         bankOwner = msg.sender;
@@ -110,6 +111,8 @@ contract TokenBank {
         uint256 depositedTokenCount = s_depositedTokensByAddress[msg.sender]
             .length;
 
+        uint256 ethBalance = s_etherBalanceByAddress[msg.sender];
+
         for (uint256 i = 0; i < depositedTokenCount; i++) {
             address tokenAddress = s_depositedTokensByAddress[msg.sender][i];
             uint256 maxWithdrawlAmount = s_tokenBalanceByAddress[msg.sender][
@@ -124,15 +127,52 @@ contract TokenBank {
             require(success, "Transaction Failed");
         }
 
+        if (ethBalance > 0) {
+            s_etherBalanceByAddress[msg.sender] -= ethBalance;
+        }
         delete s_depositedTokensByAddress[msg.sender];
         return true;
+    }
+
+    receive() external payable {
+        // Do I need to check if the user has a balance > msg.value?
+        s_etherBalanceByAddress[msg.sender] += msg.value;
+    }
+
+    fallback() external payable {
+        // Do I need to check if the user has a balance > msg.value?
+        s_etherBalanceByAddress[msg.sender] += msg.value;
+    }
+
+    function withdrawEther(uint256 amount) external payable returns (bool) {
+        // checks
+        if (
+            s_etherBalanceByAddress[msg.sender] < amount ||
+            address(this).balance < amount
+        ) {
+            revert TokenBank__WithdrawlAmountExceedsDepositAmount();
+        }
+
+        // effects
+        s_etherBalanceByAddress[msg.sender] -= amount;
+
+        // interactions (send, transfer, call);
+        (bool sent, ) = msg.sender.call{value: amount}("");
+        require(sent, "Failed to send Ether");
+        return sent;
     }
 
     function getTokenBalanceByAddress(
         address user,
         address erc20TokenAddress
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         return s_tokenBalanceByAddress[user][erc20TokenAddress];
+    }
+
+    function getEtherBalanceByAddress(
+        address user
+    ) public view returns (uint256) {
+        return s_etherBalanceByAddress[user];
     }
 
     function getDepositedTokenAddressesByUser(

@@ -139,4 +139,41 @@ contract TestTokenBank is Test {
             2000 - 100
         );
     }
+
+    function testDepositEther() public {
+        // given - user has ether
+        vm.deal(testAddress, 100 ether);
+
+        // when - depositng ether.
+        vm.prank(testAddress);
+        (bool success, bytes memory data) = address(tokenBank).call{
+            value: 2.5 ether
+        }("This is a message");
+        console.logBytes(data);
+        console.log(success);
+
+        // then
+        assertEq(address(tokenBank).balance, 2.5 ether);
+        assertEq(tokenBank.getEtherBalanceByAddress(testAddress), 2.5 ether);
+    }
+
+    modifier etherDeposited(uint256 amount) {
+        vm.deal(testAddress, 100 ether);
+        vm.prank(testAddress);
+        (bool success, ) = address(tokenBank).call{value: amount}("");
+        console.log(success, "Is ETH Deposit Valid");
+        _;
+    }
+
+    function testPartialWithrawOfEther() public etherDeposited(2.5 ether) {
+        // given - 2.5 ether has been deposited.
+        assertEq(address(tokenBank).balance, 2.5 ether);
+        assertEq(tokenBank.getEtherBalanceByAddress(testAddress), 2.5 ether);
+        // when - we attempt to withdraw 2 ether.
+        vm.startPrank(testAddress);
+        bool success = tokenBank.withdrawEther(2 ether);
+        // then
+        assertEq(success, true);
+        assertEq(tokenBank.getEtherBalanceByAddress(testAddress), 0.5 ether);
+    }
 }
