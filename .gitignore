@@ -35,6 +35,9 @@
 /frontend/*.tsbuildinfo
 /frontend/next-env.d.ts
 
+# Environment files
+/frontend/.env
+
 ### Solidity Files ###
 
 # Foundry build output (cache and artifacts)

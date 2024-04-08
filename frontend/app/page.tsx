@@ -1,95 +1,142 @@
-import Image from "next/image";
+"use client";
+import type { Abi } from "abitype";
+import { useEffect } from "react";
+import { roboto } from "./fonts";
+import { createThirdwebClient, getContract } from "thirdweb";
+import { sepolia } from "thirdweb/chains";
+import { ConnectButton } from "thirdweb/react";
+import { createWallet } from "thirdweb/wallets";
+import "./globals.css";
+import { ABI, ADDRESS } from "./helper/contract";
+
+import DepositItem from "@/components/DepositItem";
+import AcUnitIcon from '@mui/icons-material/AcUnit';
+import { Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import styles from "./page.module.css";
 
-export default function Home() {
+const client = createThirdwebClient({
+  clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string
+})
+
+const chain = sepolia;
+
+const contract = getContract({
+  client,
+  chain,
+  address: ADDRESS,
+  abi: ABI as Abi // Optional, comment it - if it breaks.
+});
+
+export const wallets = [
+  createWallet("io.metamask"),
+  createWallet("com.coinbase.wallet"),
+  createWallet("app.phantom"),
+];
+
+
+const Page = () => {
+
+  useEffect(() => {
+    const connectWallet = async () => {
+      try {
+        console.log(`Attempting to create & connect wallet...`);
+        const wallet = createWallet("io.metamask");
+        const account = await wallet.connect({
+          client
+        });
+      } catch (error) {
+        console.log(`Error while attempting to connect MM wallet: ${error}`);
+      }
+    };
+
+    // connectWallet();
+  }, [])
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "100vh",
+      padding: 16
+    }}>
+      {/* NavBar in Layout.tsx or Template.tsx */}
+      {/* TokenBank w/Intro */}
+      <div className={styles.section} style={{ marginTop: 16 }}>
+        <h2 className={roboto.className} style={{ marginBottom: 8 }}>Token Bank</h2>
+        <p className={styles.subheaderText}>Token Bank allows you to deposit any ERC20 tokens, including Ether and only you have the ability to withdraw them.</p>
+      </div>
+      {/* Perform Deposit Section */}
+      <div className={styles.section}>
+        <h2 style={{ ...roboto.style, ...{} }}>Deposit</h2>
+        <p style={{ margin: "8px 0 16px 0" }} className={styles.subheaderText}>Connect a wallet to deposit tokens</p>
+        <div style={{ textAlign: "center", marginBlock: 32 }}>
+          <ConnectButton
+            // appMetadata={}
+            connectButton={{ style: { background: "#1a81e4", color: "white" } }}
+            client={client}
+            wallets={wallets}
+            theme={"dark"}
+            connectModal={{ size: "compact" }}
+            chain={sepolia}
+          />
+        </div>
         <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+          <FormControl fullWidth>
+            <InputLabel id="token-select-label" style={{ color: 'white' }}>
+              Select a token
+            </InputLabel>
+            <Select
+              labelId="token-select-label"
+              id="token-select"
+              style={{ backgroundColor: "#283039", color: "white", width: "100%", borderRadius: 12 }}
+              label="Select a token" // Make sure this matches the InputLabel
+              displayEmpty // This will ensure the first empty item is shown
+            // value={selectedToken}
+            // onChange={handleChange}
+            >
+              <MenuItem value={10}>Ethereum</MenuItem>
+              <MenuItem value={20}>USDC</MenuItem>
+              <MenuItem value={30}>BTC</MenuItem>
+            </Select>
+            <div style={{ display: "flex", flexDirection: "row", marginTop: 16, gap: 16 }}>
+              <TextField
+                inputMode="numeric"
+                placeholder="0.00"
+                inputProps={{ style: { color: "#787e81" } }}
+                InputLabelProps={{ style: { color: "white" } }}
+                style={{ backgroundColor: "#283039", color: "white", borderRadius: 12 }}
+                id="amount" label="Amount" variant="outlined" />
+              <TextField
+                InputLabelProps={{ style: { color: "white" } }}
+                InputProps={{ readOnly: true, style: { color: "#787e81" } }}
+                style={{ backgroundColor: "#283039", color: "white", borderRadius: 12 }}
+                id="usd-value" label="USD Value" variant="outlined" />
+            </div>
+            <Button size="medium" color="primary" className={styles.depositBtn}>Deposit</Button>
+          </FormControl>
         </div>
       </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+      {/* Current Deposits & Withdraw Section */}
+      <div className={styles.section}>
+        <h2>Your deposits</h2>
+        {/* Scroll View (Deposit Items) */}
+        <DepositItem icon={<AcUnitIcon />} ticker="ETH" amount={1.22} dollarAmount={4213.31} />
+        <DepositItem icon={<AcUnitIcon />} ticker="ETH" amount={1.22} dollarAmount={4213.31} />
+        <Button className={styles.withdrawAllBtn}>Withdraw All Funds</Button>
       </div>
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   );
 }
+
+export default Page;
+
+{/*   <ConnectButton
+          client={client}
+          wallets={wallets}
+          theme={"dark"}
+          connectModal={{ size: "compact" }}
+          chain={sepolia}
+        /> */}

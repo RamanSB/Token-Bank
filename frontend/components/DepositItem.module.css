@@ -1,0 +1,12 @@
+.withdrawBtn {
+    background-color: var(--disabled-btn-color);
+    color: white;
+    text-transform: none;
+    border-radius: 12px;
+  }
+
+
+  .subheaderText {
+    color: var(--input-field-input-color);
+    font-size: 0.8rem;
+  }
