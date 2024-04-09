@@ -1,17 +1,18 @@
 "use client";
 import type { Abi } from "abitype";
 import { useEffect } from "react";
-import { roboto } from "./fonts";
 import { createThirdwebClient, getContract } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { ConnectButton } from "thirdweb/react";
 import { createWallet } from "thirdweb/wallets";
+import { roboto } from "./fonts";
 import "./globals.css";
 import { ABI, ADDRESS } from "./helper/contract";
 
+import DepositForm from "@/components/DepositForm";
 import DepositItem from "@/components/DepositItem";
 import AcUnitIcon from '@mui/icons-material/AcUnit';
-import { Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Button } from "@mui/material";
 import styles from "./page.module.css";
 
 const client = createThirdwebClient({
@@ -59,10 +60,9 @@ const Page = () => {
       height: "100vh",
       padding: 16
     }}>
-      {/* NavBar in Layout.tsx or Template.tsx */}
-      {/* TokenBank w/Intro */}
-      <div className={styles.section} style={{ marginTop: 16 }}>
-        <h2 className={roboto.className} style={{ marginBottom: 8 }}>Token Bank</h2>
+
+
+      <div className={styles.section}>
         <p className={styles.subheaderText}>Token Bank allows you to deposit any ERC20 tokens, including Ether and only you have the ability to withdraw them.</p>
       </div>
       {/* Perform Deposit Section */}
@@ -81,39 +81,7 @@ const Page = () => {
           />
         </div>
         <div>
-          <FormControl fullWidth>
-            <InputLabel id="token-select-label" style={{ color: 'white' }}>
-              Select a token
-            </InputLabel>
-            <Select
-              labelId="token-select-label"
-              id="token-select"
-              style={{ backgroundColor: "#283039", color: "white", width: "100%", borderRadius: 12 }}
-              label="Select a token" // Make sure this matches the InputLabel
-              displayEmpty // This will ensure the first empty item is shown
-            // value={selectedToken}
-            // onChange={handleChange}
-            >
-              <MenuItem value={10}>Ethereum</MenuItem>
-              <MenuItem value={20}>USDC</MenuItem>
-              <MenuItem value={30}>BTC</MenuItem>
-            </Select>
-            <div style={{ display: "flex", flexDirection: "row", marginTop: 16, gap: 16 }}>
-              <TextField
-                inputMode="numeric"
-                placeholder="0.00"
-                inputProps={{ style: { color: "#787e81" } }}
-                InputLabelProps={{ style: { color: "white" } }}
-                style={{ backgroundColor: "#283039", color: "white", borderRadius: 12 }}
-                id="amount" label="Amount" variant="outlined" />
-              <TextField
-                InputLabelProps={{ style: { color: "white" } }}
-                InputProps={{ readOnly: true, style: { color: "#787e81" } }}
-                style={{ backgroundColor: "#283039", color: "white", borderRadius: 12 }}
-                id="usd-value" label="USD Value" variant="outlined" />
-            </div>
-            <Button size="medium" color="primary" className={styles.depositBtn}>Deposit</Button>
-          </FormControl>
+          <DepositForm />
         </div>
       </div>
       {/* Current Deposits & Withdraw Section */}
@@ -124,19 +92,8 @@ const Page = () => {
         <DepositItem icon={<AcUnitIcon />} ticker="ETH" amount={1.22} dollarAmount={4213.31} />
         <Button className={styles.withdrawAllBtn}>Withdraw All Funds</Button>
       </div>
-
-
-
     </div>
   );
 }
 
 export default Page;
-
-{/*   <ConnectButton
-          client={client}
-          wallets={wallets}
-          theme={"dark"}
-          connectModal={{ size: "compact" }}
-          chain={sepolia}
-        /> */}

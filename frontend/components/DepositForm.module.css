@@ -1,0 +1,12 @@
+.depositBtn {
+    background-color: var(--disabled-btn-color);
+    color: white;
+    text-transform: none;
+    border-radius: 12px;
+    margin-top: 16px;
+  }
+
+  
+.inputField {
+     background-color: #283039; color: white; border-radius: 12px;
+}
