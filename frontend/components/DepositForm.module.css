@@ -1,9 +1,17 @@
 .depositBtn {
-    background-color: var(--disabled-btn-color);
     color: white;
     text-transform: none;
     border-radius: 12px;
     margin-top: 16px;
+    background-color: var(--disabled-btn-color);
+  }
+
+  .disabled {
+
+  }
+
+  .enabled {
+    background-color: var(--enabled-btn-color); 
   }
 
   

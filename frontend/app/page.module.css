@@ -16,4 +16,5 @@
 
 .subheaderText {
   color: var(--input-field-input-color);
+  line-height: 1.4;
 }

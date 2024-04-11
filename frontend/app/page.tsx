@@ -1,13 +1,13 @@
 "use client";
-import type { Abi } from "abitype";
 import { useEffect } from "react";
 import { createThirdwebClient, getContract } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
-import { ConnectButton } from "thirdweb/react";
+
+import { ConnectButton, useReadContract } from "thirdweb/react";
 import { createWallet } from "thirdweb/wallets";
 import { roboto } from "./fonts";
 import "./globals.css";
-import { ABI, ADDRESS } from "./helper/contract";
+import { ADDRESS } from "./helper/contract";
 
 import DepositForm from "@/components/DepositForm";
 import DepositItem from "@/components/DepositItem";
@@ -15,17 +15,18 @@ import AcUnitIcon from '@mui/icons-material/AcUnit';
 import { Button } from "@mui/material";
 import styles from "./page.module.css";
 
+
 const client = createThirdwebClient({
   clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string
 })
 
-const chain = sepolia;
+const chain = sepolia; // sepolia;
 
 const contract = getContract({
   client,
   chain,
   address: ADDRESS,
-  abi: ABI as Abi // Optional, comment it - if it breaks.
+  // abi: ABI as Abi // Optional, comment it - if it breaks.
 });
 
 export const wallets = [
@@ -37,22 +38,6 @@ export const wallets = [
 
 const Page = () => {
 
-  useEffect(() => {
-    const connectWallet = async () => {
-      try {
-        console.log(`Attempting to create & connect wallet...`);
-        const wallet = createWallet("io.metamask");
-        const account = await wallet.connect({
-          client
-        });
-      } catch (error) {
-        console.log(`Error while attempting to connect MM wallet: ${error}`);
-      }
-    };
-
-    // connectWallet();
-  }, [])
-
   return (
     <div style={{
       display: "flex",
@@ -60,8 +45,6 @@ const Page = () => {
       height: "100vh",
       padding: 16
     }}>
-
-
       <div className={styles.section}>
         <p className={styles.subheaderText}>Token Bank allows you to deposit any ERC20 tokens, including Ether and only you have the ability to withdraw them.</p>
       </div>
@@ -77,7 +60,7 @@ const Page = () => {
             wallets={wallets}
             theme={"dark"}
             connectModal={{ size: "compact" }}
-            chain={sepolia}
+            chain={chain}
           />
         </div>
         <div>

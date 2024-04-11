@@ -11,20 +11,20 @@ import { ThirdwebProvider } from "thirdweb/react";
 
 type ProviderProps = {
     children: ReactNode;
+    activeChainId?: number
 }
 
-const Providers: React.FC<ProviderProps> = ({children}) => {
+const Providers: React.FC<ProviderProps> = ({ children, activeChainId }) => {
     return (
-        <ThirdwebProvider>
-            {children}  
+        <ThirdwebProvider >
+            {children}
         </ThirdwebProvider>
     )
 }
 
 
 export default Providers;
-  
-  
-  
-  
-  
+
+
+
+
