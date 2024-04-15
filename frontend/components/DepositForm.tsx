@@ -4,17 +4,21 @@ import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, T
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
 import { useContext, useEffect, useRef, useState } from "react";
-import { PreparedTransaction, createThirdwebClient, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
+import { PreparedTransaction, createThirdwebClient, getContract, prepareContractCall, prepareTransaction, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useActiveWallet } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./DepositForm.module.css";
 import { DataContext } from "@/app/contexts/DataContext";
+import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
 
 
 // TODO: Write logic for depositing Ethereum (doesn't require ERC20 approval, as token is not an ERC20 token.)
 // TODO: Write logic for detecting Deposit / Transfer of ERC20 tokens and show user notification of successful / failed Deposit / Approval.
 // When selectedToken is ETH do not show approve, initiate a direct transfer.
+
+
+
 const DepositForm = () => {
 
     const { client } = useContext(DataContext);
@@ -23,11 +27,11 @@ const DepositForm = () => {
     const contract = getContract({
         client,
         chain,
-        address: "0xC239C942B4C77BAa76E64AC01520157E5E077236",
+        address: TOKEN_BANK_CONTRACT_ADDRESS,
         //  abi: ABI as Abi // Optional, comment it - if it breaks.
     });
 
-    const [isDepositEnabled, setIsDepositEnabled] = useState<undefined | boolean>(false);
+    const [isDepositEnabled, setIsDepositEnabled] = useState<undefined | boolean>(true);
     const [selectedToken, setSelectedToken] = useState<undefined | string>("Ethereum");
     const [amount, setAmount] = useState<bigint>(BigInt(0));
     const address = useActiveWallet()?.getAccount()?.address
@@ -98,7 +102,12 @@ const DepositForm = () => {
         console.log(`handleChange(${JSON.stringify(event.target)})`);
         const token = event.target.value;
         setSelectedToken(event.target.value);
-        setIsDepositEnabled(Boolean(!showApproval && token && amount));
+        if (token === "Ethereum") {
+            setIsDepositEnabled(true);
+            setShowApproval(false);
+        } else {
+            setIsDepositEnabled(Boolean(!showApproval && token && amount));
+        }
     };
 
     function convertToSmallestUnit(amount: string, decimals: number): bigint {
@@ -113,39 +122,49 @@ const DepositForm = () => {
         if (!selectedToken) {
             return;
         }
-        console.log(`handleAmountChange(${JSON.stringify(event.target.value)})`);
-        const convertedAmount = convertToSmallestUnit(event.target.value, decimalsRef.current as number);
-        setAmount(convertedAmount);
-        setShowApproval(allowanceAmount < convertedAmount);
-        setIsDepositEnabled(selectedToken !== undefined && !showApproval && convertedAmount !== BigInt(0));
-
+        console.log(`handleAmountChange(${JSON.stringify(event.target.value)}) - ${selectedToken}`);
+        if (selectedToken !== "Ethereum") {
+            const convertedAmount = convertToSmallestUnit(event.target.value, decimalsRef.current as number);
+            setAmount(convertedAmount);
+            setShowApproval(allowanceAmount < convertedAmount);
+            setIsDepositEnabled(selectedToken !== undefined && !showApproval && convertedAmount !== BigInt(0));
+        } else {
+            const convertedAmount = convertToSmallestUnit(event.target.value, 18);
+            console.log(`Converted Amount: ${convertedAmount}`);
+            setAmount(convertedAmount);
+            setShowApproval(false);
+        }
     }
 
     const onDeposit = async () => {
         try {
             setIsTxnPending(true);
             console.log(`onDeposit(): ${selectedToken} | ${amount}`);
-            const erc20Address = tokens.find((item) => item.name === selectedToken)?.address as string;
-            const txnAmount = amount;
+            // Handle all ERC20 tokens
+            if (selectedToken !== "Ethereum") {
+                const erc20Address = tokens.find((item) => item.name === selectedToken)?.address as string;
+                const txnAmount = amount;
+                const txn: PreparedTransaction = prepareContractCall({
+                    contract,
+                    method: resolveMethod("depositToken"), //"function depositToken(address erc20TokenAddress, uint256 amount) returns (bool)",
+                    params: [erc20Address, txnAmount],
 
-
-            const txn = prepareContractCall({
-                contract,
-                method: resolveMethod("depositToken"), //"function depositToken(address erc20TokenAddress, uint256 amount) returns (bool)",
-                params: [erc20Address, txnAmount],
-
-            });
-
-            const transactionResult = await sendTransaction({ transaction: txn, account: wallet?.getAccount() as Account });
-            console.log(`Txn Result: ${JSON.stringify(transactionResult)}`);
-            const receipt = await waitForReceipt(transactionResult);
-            logTxnReceipt(receipt);
+                });
+                const transactionResult = await sendTransaction({ transaction: txn, account: wallet?.getAccount() as Account });
+                console.log(`Txn Result: ${JSON.stringify(transactionResult)}`);
+                const receipt = await waitForReceipt(transactionResult);
+                logTxnReceipt(receipt);
+            } else {
+                // Handle Ethereums case seperately (Ether does not have a contract address).
+                const txnHash = await wallet?.getAccount()?.sendTransaction({ chainId: chain.id, to: TOKEN_BANK_CONTRACT_ADDRESS, value: amount })
+                console.log(typeof txnHash);
+                console.log(txnHash);
+            }
         } catch (error) {
             console.log(`Error while attempting to perform a deposit: ${error}`)
         } finally {
             setIsTxnPending(false);
         }
-
     }
 
     const onApproval = async () => {
@@ -182,7 +201,6 @@ const DepositForm = () => {
         console.log(`TxnReceipt - logsBloom: ${receipt.logsBloom}`)
         console.log(`TxnReceipt - logs: ${receipt.logs}`)
     }
-
 
     return (<FormControl fullWidth>
         <InputLabel id="token-select-label" style={{ color: 'white' }}>

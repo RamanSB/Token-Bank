@@ -8,12 +8,14 @@ import { Button, List } from "@mui/material";
 import styles from "./WithdrawPane.module.css";
 import { useContext, useEffect, useState } from "react";
 import { DataContext } from "@/app/contexts/DataContext";
-import { getContract, readContract, resolveMethod } from "thirdweb";
+import { PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useActiveWallet } from "thirdweb/react";
-import { Wallet } from "thirdweb/wallets";
+import { Account, Wallet } from "thirdweb/wallets";
 import CircularProgress from '@mui/material/CircularProgress';
 import tokens from "@/app/data/tokens";
+import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
+import Image from "next/image";
 
 
 /* TODO:
@@ -26,12 +28,13 @@ const WithdrawPane = () => {
 
     const activeWallet: undefined | Wallet = useActiveWallet();
     const [isLoading, setIsLoading] = useState(false);
-    const { client, activeDeposits, setActiveDeposits } = useContext(DataContext);
+    const [isWithdrawAllTxnLoading, setIsWithdrawAllTxnLoading] = useState(false);
+    const { client, activeDeposits, setActiveDeposits, isConnected, setIsConnected } = useContext(DataContext);
     const chain = sepolia;
     const contract = getContract({
         client,
         chain,
-        address: "0xC239C942B4C77BAa76E64AC01520157E5E077236",
+        address: TOKEN_BANK_CONTRACT_ADDRESS,
     });
 
     useEffect(() => {
@@ -83,6 +86,20 @@ const WithdrawPane = () => {
             }
         };
 
+        const fetchEtherDepositData = async (): Promise<bigint | undefined> => {
+            try {
+                console.log(`fetchEtherDepositData()`);
+                const userEthBalance = await readContract({
+                    contract,
+                    method: resolveMethod("getEtherBalanceByAddress"),
+                    params: [activeWallet?.getAccount()?.address],
+                });
+                return BigInt(userEthBalance as unknown as bigint);
+            } catch (error) {
+                console.log(`Error fetching ether deposit data for address (${activeWallet?.getAccount()?.address}) ${error}`);
+            }
+        };
+
         const fetchAndSetActiveDeposits = async () => {
             try {
                 console.log(`setActiveDeposits()`);
@@ -102,8 +119,11 @@ const WithdrawPane = () => {
                     console.log(`Token balance for ${tokenAddresses[i]}: ${tokenData['amount']} - ${tokenData['decimals']}`);
                     tempMap.set(tokenAddresses[i], tokenData);
                 }
+                const ethBalance: bigint | undefined = await fetchEtherDepositData();
+                if (ethBalance) {
+                    tempMap.set("NativeNetworkToken", { amount: ethBalance, decimals: 18 });
+                }
                 setActiveDeposits(tempMap);
-
             } catch (error) {
                 console.log(`Error setting active deposits: ${error}`);
             } finally {
@@ -112,11 +132,36 @@ const WithdrawPane = () => {
         }
 
         fetchAndSetActiveDeposits();
+        setIsConnected(Boolean(activeWallet)); // If wallet is connected should be true otherwise should be false.
 
     }, [activeWallet]);
 
 
+    const onWithdrawAll = async () => {
+        try {
+            setIsWithdrawAllTxnLoading(true);
+            console.log(`onWithdrawAll()`);
+            if (!isConnected) {
+                console.warn(`User must be connect wallet before attempting to withdraw funds`);
+            }
+            const txn: PreparedTransaction<any> = prepareContractCall({
+                contract,
+                method: resolveMethod("withdrawAll"),
+                params: []
+            });
 
+            const txnReceipt = await sendAndConfirmTransaction({ transaction: txn, account: activeWallet?.getAccount() as Account });
+            // Clear the state once everything has been withdrawn
+            console.log(txnReceipt)
+            if (txnReceipt.status === "success") {
+                setActiveDeposits(new Map([]));
+            }
+        } catch (error) {
+            console.log(`An error occurred while attempting to withdraw all funds for user (${activeWallet?.getAccount()?.address}): ${error}`);
+        } finally {
+            setIsWithdrawAllTxnLoading(false);
+        }
+    }
 
     return (
         <>
@@ -134,6 +179,13 @@ const WithdrawPane = () => {
                                 <>
                                     <List>
                                         {Array.from(activeDeposits.entries()).map((item: [string, { amount: bigint, decimals?: number }]) => {
+                                            if (item[0] === "NativeNetworkToken") {
+                                                // TODO: Leverage current network as the NativeNetworkToken will change amongst different networks.
+                                                console.log(`NativeNetworkToken..`);
+                                                const token = tokens.find(token => token.address === "");
+                                                console.log(token);
+                                                return <DepositItem key={item[0]} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={18} icon={<Image src={token?.icon as string} height={32} width={32} alt="" />} />
+                                            }
                                             const token = tokens.find(token => token.address == item[0]);
                                             if (!token) {
                                                 console.log(`Unable to find token: ${item[0]}`);
@@ -156,11 +208,9 @@ const WithdrawPane = () => {
                     </>
                 )
             }
-
-
-
-
-            <Button disabled={!activeWallet || activeDeposits.size === 0} className={styles.withdrawAllBtn}>Withdraw All Funds</Button>
+            <Button disabled={!activeWallet || activeDeposits.size === 0} className={styles.withdrawAllBtn} onClick={onWithdrawAll}>
+                {isWithdrawAllTxnLoading ? <CircularProgress /> : "Withdraw All Funds"}
+            </Button>
 
         </>)
 }

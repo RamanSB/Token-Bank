@@ -7,7 +7,7 @@ import { ConnectButton, useActiveWallet } from "thirdweb/react";
 import { createWallet } from "thirdweb/wallets";
 import { roboto } from "./fonts";
 import "./globals.css";
-import { ADDRESS } from "./helper/contract";
+import { TOKEN_BANK_CONTRACT_ADDRESS } from "./helper/contract";
 
 import DepositForm from "@/components/DepositForm";
 import WithdrawPane from "@/components/WithdrawPane";
@@ -23,7 +23,7 @@ const chain = sepolia; // sepolia;
 const contract = getContract({
   client,
   chain,
-  address: ADDRESS,
+  address: TOKEN_BANK_CONTRACT_ADDRESS,
   // abi: ABI as Abi // Optional, comment it - if it breaks.
 });
 
@@ -32,6 +32,7 @@ export const wallets = [
   createWallet("com.coinbase.wallet"),
   createWallet("app.phantom"),
 ];
+
 
 
 
