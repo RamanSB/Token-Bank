@@ -5,15 +5,6 @@
 
 
 
-.withdrawAllBtn {
-  background: #1a81e4;
-   color: white;
-   text-transform: none;
-   margin-top: 16px;
-   border-radius: 12px;
-   width: 100%;
-}
-
 .subheaderText {
   color: var(--input-field-input-color);
   line-height: 1.4;

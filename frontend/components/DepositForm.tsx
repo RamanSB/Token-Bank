@@ -3,31 +3,29 @@ import tokens from "@/app/data/tokens";
 import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { PreparedTransaction, createThirdwebClient, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useActiveWallet } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./DepositForm.module.css";
+import { DataContext } from "@/app/contexts/DataContext";
 
 
 // TODO: Write logic for depositing Ethereum (doesn't require ERC20 approval, as token is not an ERC20 token.)
-
-const client = createThirdwebClient({
-    clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string
-})
-
-const chain = sepolia;
-
-const contract = getContract({
-    client,
-    chain,
-    address: "0xC239C942B4C77BAa76E64AC01520157E5E077236",
-    //  abi: ABI as Abi // Optional, comment it - if it breaks.
-});
-
+// TODO: Write logic for detecting Deposit / Transfer of ERC20 tokens and show user notification of successful / failed Deposit / Approval.
+// When selectedToken is ETH do not show approve, initiate a direct transfer.
 const DepositForm = () => {
 
+    const { client } = useContext(DataContext);
+    const chain = sepolia;
+
+    const contract = getContract({
+        client,
+        chain,
+        address: "0xC239C942B4C77BAa76E64AC01520157E5E077236",
+        //  abi: ABI as Abi // Optional, comment it - if it breaks.
+    });
 
     const [isDepositEnabled, setIsDepositEnabled] = useState<undefined | boolean>(false);
     const [selectedToken, setSelectedToken] = useState<undefined | string>("Ethereum");
@@ -93,7 +91,7 @@ const DepositForm = () => {
     }, [selectedToken]);
 
     useEffect(() => {
-        console.log(`isDepositeEnabled: ${isDepositEnabled}`);
+        console.log(`isDepositEnabled: ${isDepositEnabled}`);
     }, [isDepositEnabled])
 
     const handleTokenChange = async (event: SelectChangeEvent<any>) => {
@@ -141,7 +139,7 @@ const DepositForm = () => {
             const transactionResult = await sendTransaction({ transaction: txn, account: wallet?.getAccount() as Account });
             console.log(`Txn Result: ${JSON.stringify(transactionResult)}`);
             const receipt = await waitForReceipt(transactionResult);
-            console.log(receipt);
+            logTxnReceipt(receipt);
         } catch (error) {
             console.log(`Error while attempting to perform a deposit: ${error}`)
         } finally {

@@ -1,0 +1,22 @@
+.withdrawAllBtn {
+    background: #1a81e4;
+     color: white;
+     text-transform: none;
+     margin-top: 16px;
+     border-radius: 12px;
+     width: 100%;
+  }
+
+  .withdrawAllBtn:disabled {
+    background: var(--disabled-btn-color);
+    color: white;
+  }
+
+  .subheaderText {
+    color: var(--input-field-input-color);
+  }
+
+  .disabled {
+    background: var(--disabled-btn-color);
+  }
+

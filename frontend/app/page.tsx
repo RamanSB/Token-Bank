@@ -3,16 +3,14 @@ import { useEffect } from "react";
 import { createThirdwebClient, getContract } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 
-import { ConnectButton, useReadContract } from "thirdweb/react";
+import { ConnectButton, useActiveWallet } from "thirdweb/react";
 import { createWallet } from "thirdweb/wallets";
 import { roboto } from "./fonts";
 import "./globals.css";
 import { ADDRESS } from "./helper/contract";
 
 import DepositForm from "@/components/DepositForm";
-import DepositItem from "@/components/DepositItem";
-import AcUnitIcon from '@mui/icons-material/AcUnit';
-import { Button } from "@mui/material";
+import WithdrawPane from "@/components/WithdrawPane";
 import styles from "./page.module.css";
 
 
@@ -36,7 +34,15 @@ export const wallets = [
 ];
 
 
+
+
 const Page = () => {
+
+  const activeWallet = useActiveWallet();
+
+  useEffect(() => {
+    console.log(`Active Wallet: ${JSON.stringify(activeWallet)}`);
+  }, [activeWallet])
 
   return (
     <div style={{
@@ -69,11 +75,7 @@ const Page = () => {
       </div>
       {/* Current Deposits & Withdraw Section */}
       <div className={styles.section}>
-        <h2>Your deposits</h2>
-        {/* Scroll View (Deposit Items) */}
-        <DepositItem icon={<AcUnitIcon />} ticker="ETH" amount={1.22} dollarAmount={4213.31} />
-        <DepositItem icon={<AcUnitIcon />} ticker="ETH" amount={1.22} dollarAmount={4213.31} />
-        <Button className={styles.withdrawAllBtn}>Withdraw All Funds</Button>
+        <WithdrawPane />
       </div>
     </div>
   );

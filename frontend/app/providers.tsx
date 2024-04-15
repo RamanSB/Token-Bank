@@ -2,6 +2,7 @@
 import "react";
 import { ReactNode } from "react";
 import { ThirdwebProvider } from "thirdweb/react";
+import DataContextProvider, { DataContext } from "./contexts/DataContext";
 
 
 /**
@@ -17,7 +18,9 @@ type ProviderProps = {
 const Providers: React.FC<ProviderProps> = ({ children, activeChainId }) => {
     return (
         <ThirdwebProvider >
-            {children}
+            <DataContextProvider>
+                {children}
+            </DataContextProvider>
         </ThirdwebProvider>
     )
 }
