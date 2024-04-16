@@ -3,14 +3,15 @@ import tokens from "@/app/data/tokens";
 import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
-import { useContext, useEffect, useRef, useState } from "react";
+import { MutableRefObject, useContext, useEffect, useRef, useState } from "react";
 import { PreparedTransaction, createThirdwebClient, getContract, prepareContractCall, prepareTransaction, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
-import { useActiveWallet } from "thirdweb/react";
+import { useActiveWallet, useContractEvents } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./DepositForm.module.css";
 import { DataContext } from "@/app/contexts/DataContext";
 import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
+import { EventNoteTwoTone } from "@mui/icons-material";
 
 
 // TODO: Write logic for depositing Ethereum (doesn't require ERC20 approval, as token is not an ERC20 token.)
@@ -21,7 +22,7 @@ import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
 
 const DepositForm = () => {
 
-    const { client } = useContext(DataContext);
+    const { client, setActiveDeposits } = useContext(DataContext);
     const chain = sepolia;
 
     const contract = getContract({
@@ -41,6 +42,11 @@ const DepositForm = () => {
     const erc20TokenBalanceRef = useRef<bigint>(BigInt(0));
     const wallet: Wallet | undefined = useActiveWallet();
     const [isTxnPending, setIsTxnPending] = useState(false);
+    // TODO: Find out how to pass the event name only without using the entire AbiEvent type.
+    const contractEvents = useContractEvents({ contract, events: [] });
+    const eventCountRef: MutableRefObject<number> = useRef(-1);
+
+
 
     useEffect(() => {
         const fetchAllowance = async (erc20Address: string) => {
@@ -52,6 +58,7 @@ const DepositForm = () => {
                     method: "function allowance(address owner, address spender) returns (uint256)",
                     params: [address as string, contract.address]
                 });
+                console.log(`Allowance amount: ${allowance}`); // TODO: Why is KTK returned with greater than 18 decimals worth of digits.
                 setShowApproval(BigInt(0) === allowance);
                 setAllowanceAmount(allowance);
                 return allowance;
@@ -96,7 +103,44 @@ const DepositForm = () => {
 
     useEffect(() => {
         console.log(`isDepositEnabled: ${isDepositEnabled}`);
-    }, [isDepositEnabled])
+    }, [isDepositEnabled]);
+
+    useEffect(() => {
+        if (wallet) {
+            // TODO: Remove these console.logs
+            console.log(`#ContractEvents: ${contractEvents.data?.length}`)
+            console.log(`[UE - Start] EventCount: ${eventCountRef.current}`);
+            if (eventCountRef.current !== -1) {
+                const eventData = contractEvents.data?.slice(eventCountRef.current);
+                console.log(eventData)
+                console.log(eventData?.length)
+                console.log(typeof eventData);
+                const event: any = eventData?.findLast((event: any) => event.eventName === "TokenBank__Deposit" && event.args.depositer === wallet.getAccount()?.address);
+                console.log(event);
+                console.log(typeof event);
+                if (event) {
+                    const { depositer, erc20TokenAddress, amount }: { depositer: string, erc20TokenAddress: string, amount: bigint } = event.args;
+                    setActiveDeposits((prevState) => {
+                        const updatedMap = new Map(prevState);
+                        let depositAmount: bigint = amount;
+                        let decimals;
+                        if (updatedMap.has(erc20TokenAddress)) {
+                            const previousValue = updatedMap.get(erc20TokenAddress);
+                            console.log(`Existing deposit of ${erc20TokenAddress} existed:`)
+                            console.log(previousValue);
+                            depositAmount += (previousValue?.amount || BigInt(0));
+                            decimals = previousValue?.decimals;
+                        }
+                        updatedMap.set(erc20TokenAddress, { amount: depositAmount, decimals: decimals || 18 })
+                        new Map(updatedMap.entries());
+                        return updatedMap;
+                    });
+                }
+            }
+            eventCountRef.current = contractEvents.data?.length as number;
+            console.log(`[UE - End] EventCount: ${eventCountRef.current}`);
+        }
+    }, [contractEvents.dataUpdatedAt])
 
     const handleTokenChange = async (event: SelectChangeEvent<any>) => {
         console.log(`handleChange(${JSON.stringify(event.target)})`);
@@ -127,6 +171,8 @@ const DepositForm = () => {
             const convertedAmount = convertToSmallestUnit(event.target.value, decimalsRef.current as number);
             setAmount(convertedAmount);
             setShowApproval(allowanceAmount < convertedAmount);
+            console.log(`Allowance Amount: ${allowanceAmount}`);
+            console.log(`Converted Amount: ${convertedAmount}`);
             setIsDepositEnabled(selectedToken !== undefined && !showApproval && convertedAmount !== BigInt(0));
         } else {
             const convertedAmount = convertToSmallestUnit(event.target.value, 18);

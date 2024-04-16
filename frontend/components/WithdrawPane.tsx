@@ -178,13 +178,13 @@ const WithdrawPane = () => {
                                 :
                                 <>
                                     <List>
-                                        {Array.from(activeDeposits.entries()).map((item: [string, { amount: bigint, decimals?: number }]) => {
+                                        {Array.from(activeDeposits.entries()).map((item: [string, { amount: bigint, decimals?: number }], index: number) => {
                                             if (item[0] === "NativeNetworkToken") {
                                                 // TODO: Leverage current network as the NativeNetworkToken will change amongst different networks.
                                                 console.log(`NativeNetworkToken..`);
                                                 const token = tokens.find(token => token.address === "");
                                                 console.log(token);
-                                                return <DepositItem key={item[0]} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={18} icon={<Image src={token?.icon as string} height={32} width={32} alt="" />} />
+                                                return <DepositItem key={index} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={18} icon={<Image src={token?.icon as string} height={32} width={32} alt="" />} />
                                             }
                                             const token = tokens.find(token => token.address == item[0]);
                                             if (!token) {
@@ -194,7 +194,7 @@ const WithdrawPane = () => {
                                             if (!decimals) {
                                                 console.log(`Unable to determine decimals for ${item[0]}: ${decimals}`);
                                             }
-                                            return <DepositItem key={item[0]} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={decimals as number} icon={<AcUnitIcon />} />
+                                            return <DepositItem key={index} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={decimals as number} icon={<AcUnitIcon />} />
                                         })}
                                     </List>
                                 </>

@@ -4,11 +4,17 @@ pragma solidity ^0.8.19;
 import {IERC20} from "../lib/forge-std/src/interfaces/IERC20.sol";
 
 contract TokenBank {
-    event TokenBank__TokenDeposited(
-        address indexed depositer,
-        address indexed erc20TokenAddress,
+    event TokenBank__Deposit(
+        address indexed depositor,
+        address erc20TokenAddress,
         uint256 amount
     );
+    event TokenBank__Withdraw(
+        address indexed withdrawer,
+        address erc20TokenAddress,
+        uint256 amount
+    );
+    event TokenBank__WithdrawAll(address indexed withdrawer);
 
     error TokenBank__InvalidERC20Token();
     error TokenBank__WithdrawerIsNotOwner();
@@ -32,6 +38,18 @@ contract TokenBank {
 
     constructor() {
         bankOwner = msg.sender;
+    }
+
+    // TODO: Decide whether to emit an event here when ether is received..
+    receive() external payable {
+        // Do I need to check if the user has a balance > msg.value?
+        s_etherBalanceByAddress[msg.sender] += msg.value;
+    }
+
+    // TODO: Decide whether to emit an event here when ether is received..
+    fallback() external payable {
+        // Do I need to check if the user has a balance > msg.value?
+        s_etherBalanceByAddress[msg.sender] += msg.value;
     }
 
     /**
@@ -66,6 +84,7 @@ contract TokenBank {
             amount
         );
         require(success, "Transfer failed");
+        emit TokenBank__Deposit(msg.sender, erc20TokenAddress, amount);
         return true;
     }
 
@@ -103,9 +122,11 @@ contract TokenBank {
         // Interactions
         bool success = IERC20(erc20TokenAddress).transfer(msg.sender, amount);
         require(success, "Transaction Failed");
+        emit TokenBank__Withdraw(msg.sender, erc20TokenAddress, amount);
         return true;
     }
 
+    // TODO: Actually send eth balance back to user ...
     function withdrawAll() external ReEntrancyGuard returns (bool) {
         // Not adhering to CEI - so leverage ReEntrancy Guard.
         uint256 depositedTokenCount = s_depositedTokensByAddress[msg.sender]
@@ -131,17 +152,8 @@ contract TokenBank {
             s_etherBalanceByAddress[msg.sender] -= ethBalance;
         }
         delete s_depositedTokensByAddress[msg.sender];
+        emit TokenBank__WithdrawAll(msg.sender);
         return true;
-    }
-
-    receive() external payable {
-        // Do I need to check if the user has a balance > msg.value?
-        s_etherBalanceByAddress[msg.sender] += msg.value;
-    }
-
-    fallback() external payable {
-        // Do I need to check if the user has a balance > msg.value?
-        s_etherBalanceByAddress[msg.sender] += msg.value;
     }
 
     function withdrawEther(uint256 amount) external payable returns (bool) {
@@ -159,6 +171,7 @@ contract TokenBank {
         // interactions (send, transfer, call);
         (bool sent, ) = msg.sender.call{value: amount}("");
         require(sent, "Failed to send Ether");
+        emit TokenBank__Withdraw(msg.sender, address(0), amount);
         return sent;
     }
 
