@@ -1,24 +1,21 @@
 "use client";
+import { DataContext } from "@/app/contexts/DataContext";
 import tokens from "@/app/data/tokens";
+import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
 import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
 import { MutableRefObject, useContext, useEffect, useRef, useState } from "react";
-import { PreparedTransaction, createThirdwebClient, getContract, prepareContractCall, prepareTransaction, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
+import { ADDRESS_ZERO, PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useActiveWallet, useContractEvents } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./DepositForm.module.css";
-import { DataContext } from "@/app/contexts/DataContext";
-import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
-import { EventNoteTwoTone } from "@mui/icons-material";
 
 
 // TODO: Write logic for depositing Ethereum (doesn't require ERC20 approval, as token is not an ERC20 token.)
 // TODO: Write logic for detecting Deposit / Transfer of ERC20 tokens and show user notification of successful / failed Deposit / Approval.
 // When selectedToken is ETH do not show approve, initiate a direct transfer.
-
-
 
 const DepositForm = () => {
 
@@ -45,8 +42,6 @@ const DepositForm = () => {
     // TODO: Find out how to pass the event name only without using the entire AbiEvent type.
     const contractEvents = useContractEvents({ contract, events: [] });
     const eventCountRef: MutableRefObject<number> = useRef(-1);
-
-
 
     useEffect(() => {
         const fetchAllowance = async (erc20Address: string) => {
@@ -115,11 +110,15 @@ const DepositForm = () => {
                 console.log(eventData)
                 console.log(eventData?.length)
                 console.log(typeof eventData);
-                const event: any = eventData?.findLast((event: any) => event.eventName === "TokenBank__Deposit" && event.args.depositer === wallet.getAccount()?.address);
+                const event: any = eventData?.findLast((event: any) => event.eventName === "TokenBank__Deposit" && event.args.depositor === wallet.getAccount()?.address);
                 console.log(event);
                 console.log(typeof event);
                 if (event) {
-                    const { depositer, erc20TokenAddress, amount }: { depositer: string, erc20TokenAddress: string, amount: bigint } = event.args;
+                    const { depositor, amount }: { depositor: string, amount: bigint } = event.args;
+                    let { erc20TokenAddress }: { erc20TokenAddress: string } = event.args;
+                    if (erc20TokenAddress === ADDRESS_ZERO) {
+                        erc20TokenAddress = "NativeNetworkToken"
+                    }
                     setActiveDeposits((prevState) => {
                         const updatedMap = new Map(prevState);
                         let depositAmount: bigint = amount;
@@ -131,8 +130,8 @@ const DepositForm = () => {
                             depositAmount += (previousValue?.amount || BigInt(0));
                             decimals = previousValue?.decimals;
                         }
+                        console.log(`Creating or updating deposit ${erc20TokenAddress}: ${amount}`);
                         updatedMap.set(erc20TokenAddress, { amount: depositAmount, decimals: decimals || 18 })
-                        new Map(updatedMap.entries());
                         return updatedMap;
                     });
                 }
@@ -161,7 +160,7 @@ const DepositForm = () => {
         return BigInt(fullAmount);
     }
 
-
+    // TODO: Fix bug regarding approve / deposit being shown (related to allowance amount I believe...)
     const handleAmountChange = async (event: any) => {
         if (!selectedToken) {
             return;
@@ -202,10 +201,19 @@ const DepositForm = () => {
                 logTxnReceipt(receipt);
             } else {
                 // Handle Ethereums case seperately (Ether does not have a contract address).
-                const txnHash = await wallet?.getAccount()?.sendTransaction({ chainId: chain.id, to: TOKEN_BANK_CONTRACT_ADDRESS, value: amount })
-                console.log(typeof txnHash);
-                console.log(txnHash);
+                console.log(`${wallet?.getAccount()?.address} is sending ETH...`);
+                const txnResult = await wallet?.getAccount()?.sendTransaction({ chainId: chain.id, to: TOKEN_BANK_CONTRACT_ADDRESS, value: amount });
+                console.log(typeof txnResult);
+                console.log(txnResult);
+
+                if (txnResult?.transactionHash) {
+                    let receipt = await waitForReceipt({ chain, client, transactionHash: txnResult.transactionHash });
+                    console.log(typeof receipt);
+                    console.log(receipt);
+                };
+
             }
+
         } catch (error) {
             console.log(`Error while attempting to perform a deposit: ${error}`)
         } finally {

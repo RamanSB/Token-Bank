@@ -40,16 +40,14 @@ contract TokenBank {
         bankOwner = msg.sender;
     }
 
-    // TODO: Decide whether to emit an event here when ether is received..
     receive() external payable {
-        // Do I need to check if the user has a balance > msg.value?
         s_etherBalanceByAddress[msg.sender] += msg.value;
+        emit TokenBank__Deposit(msg.sender, address(0), msg.value);
     }
 
-    // TODO: Decide whether to emit an event here when ether is received..
     fallback() external payable {
-        // Do I need to check if the user has a balance > msg.value?
         s_etherBalanceByAddress[msg.sender] += msg.value;
+        emit TokenBank__Deposit(msg.sender, address(0), msg.value);
     }
 
     /**
@@ -149,7 +147,7 @@ contract TokenBank {
         }
 
         if (ethBalance > 0) {
-            s_etherBalanceByAddress[msg.sender] -= ethBalance;
+            _withdrawEther(ethBalance);
         }
         delete s_depositedTokensByAddress[msg.sender];
         emit TokenBank__WithdrawAll(msg.sender);
@@ -157,6 +155,10 @@ contract TokenBank {
     }
 
     function withdrawEther(uint256 amount) external payable returns (bool) {
+        return _withdrawEther(amount);
+    }
+
+    function _withdrawEther(uint256 amount) internal returns (bool) {
         // checks
         if (
             s_etherBalanceByAddress[msg.sender] < amount ||
@@ -169,7 +171,9 @@ contract TokenBank {
         s_etherBalanceByAddress[msg.sender] -= amount;
 
         // interactions (send, transfer, call);
-        (bool sent, ) = msg.sender.call{value: amount}("");
+        (bool sent, ) = msg.sender.call{value: amount}(
+            "TokenBank v3 - 0xNascosta"
+        );
         require(sent, "Failed to send Ether");
         emit TokenBank__Withdraw(msg.sender, address(0), amount);
         return sent;

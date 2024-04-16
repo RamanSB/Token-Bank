@@ -17,13 +17,10 @@ import tokens from "@/app/data/tokens";
 import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
 import Image from "next/image";
 
-
 /* TODO:
     1) Ensure Decimals are considered when displaying amount of tokens in Withdraw Pane 
     2) Ensure withdraw button opens up modal to withdraw coin, ensure withdrawl works appropriately.
 */
-
-
 const WithdrawPane = () => {
 
     const activeWallet: undefined | Wallet = useActiveWallet();

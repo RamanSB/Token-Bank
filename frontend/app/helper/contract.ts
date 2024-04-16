@@ -1,4 +1,4 @@
-export const TOKEN_BANK_CONTRACT_ADDRESS = "0x0074AE1A14065Ba31048F4BaF1C71F698a60f0F8";
+export const TOKEN_BANK_CONTRACT_ADDRESS = "0x155B79d1Aa17e021bD495f99305aC2DeDEe958de";
 export const ABI = [
     {
         "inputs": [],
