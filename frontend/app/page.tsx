@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { createThirdwebClient, getContract } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 
-import { ConnectButton, useActiveWallet } from "thirdweb/react";
+import { ConnectButton, useActiveWallet, useActiveWalletChain } from "thirdweb/react";
 import { createWallet } from "thirdweb/wallets";
 import { roboto } from "./fonts";
 import "./globals.css";
@@ -34,9 +34,6 @@ export const wallets = [
 ];
 
 
-
-
-
 const Page = () => {
 
   const activeWallet = useActiveWallet();
@@ -54,6 +51,7 @@ const Page = () => {
     }}>
       <div className={styles.section}>
         <p className={styles.subheaderText}>Token Bank allows you to deposit any ERC20 tokens, including Ether and only you have the ability to withdraw them.</p>
+
       </div>
       {/* Perform Deposit Section */}
       <div className={styles.section}>
@@ -67,7 +65,7 @@ const Page = () => {
             wallets={wallets}
             theme={"dark"}
             connectModal={{ size: "compact" }}
-            chain={chain}
+            chain={useActiveWalletChain()}
           />
         </div>
         <div>
