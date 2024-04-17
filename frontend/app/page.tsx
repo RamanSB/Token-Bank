@@ -38,10 +38,6 @@ const Page = () => {
 
   const activeWallet = useActiveWallet();
 
-  useEffect(() => {
-    console.log(`Active Wallet: ${JSON.stringify(activeWallet)}`);
-  }, [activeWallet])
-
   return (
     <div style={{
       display: "flex",

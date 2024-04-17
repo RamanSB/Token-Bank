@@ -11,6 +11,7 @@ import { Chip, Divider, List, ListItemButton, ListItemText, Menu, MenuItem } fro
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import BlockIcon from '@mui/icons-material/Block';
 import { useActiveWalletChain, useSwitchActiveWalletChain } from "thirdweb/react";
+import { ArrowDropDown } from "@mui/icons-material";
 
 const Navbar = () => {
     return <div className={styles.navbar}>
@@ -21,34 +22,18 @@ const Navbar = () => {
         <NetworkMenu />
     </div>
 }
-
-/**
- * Detect network user is already connected to and set that as the active network.
- * Support Base, Arbitrum Nova, Degen, StarkNet, ETH Mainnet
- * @returns 
- */
-
-
 // TODO: Remove padding from Network / Chains Menu
-// TODO: Understand why Menuitem onClick and selectedIndex is not updating to the correct chain...
 const NetworkMenu = () => {
     const switchChain = useSwitchActiveWalletChain();
     const activeChain = useActiveWalletChain();
-    console.log(`Active chain: ${JSON.stringify(activeChain)}`)
-    console.log(activeChain);
-    console.log(typeof activeChain);
-    const chains: Chain[] = [sepolia, baseSepolia, base, /* arbitrumNova */];
-
+    const chains: Chain[] = [sepolia, baseSepolia, base]; /* arbitrumNova */;
     const [chainMetadata, setChainMetdata] = useState<any>(undefined);
-    console.log(`ChainMetadata: ${JSON.stringify(chainMetadata)}`);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedIndex, setSelectedIndex] = useState(-1);
-    console.log(`Selected Index: ${selectedIndex}`);
 
 
     useEffect(() => {
         (async function () {
-            console.log(`Fetching chain data...`)
             const metadata = await Promise.all(chains.map((chain) => getChainMetadata(chain)));
             setChainMetdata(metadata);
         })()
@@ -56,6 +41,7 @@ const NetworkMenu = () => {
 
     useEffect(() => {
         const index = chains.findIndex((chain: Chain) => chain.id === activeChain?.id);
+
         if (index !== -1) { // Active chain which is found.
             setSelectedIndex(index);
         } else if (activeChain === undefined) { // No active chain
@@ -77,9 +63,7 @@ const NetworkMenu = () => {
         }
         setSelectedIndex(index);
         setAnchorEl(null);
-        switchChain(chains[selectedIndex])
-        console.log(chains[selectedIndex]);
-
+        switchChain(chains[index])
     }
 
     const handleClose = () => {
@@ -101,6 +85,8 @@ const NetworkMenu = () => {
                     onClick={handleClickListItem}
                     icon={[-1, -2].includes(selectedIndex) ? (selectedIndex == -1 ? <AccountBalanceWalletIcon /> : <BlockIcon />) : (chainMetadata && <Image src={_generateIpfsHash(chainMetadata[selectedIndex].icon.url)} width={20} height={20} alt={chainMetadata[selectedIndex].name} />)}
                     label={[-1, -2].includes(selectedIndex) ? (selectedIndex == -1 ? "Select Network" : "Unsupported Network") : (chainMetadata && chainMetadata[selectedIndex].name)}
+                    deleteIcon={<ArrowDropDown style={{ color: "white" }} />}
+                    onDelete={handleClickListItem}
                     id="lock-button"
                     style={{ color: "white", ...roboto.style, fontSize: 16, background: "#283039", padding: 8 }}
                 />
@@ -121,11 +107,13 @@ const NetworkMenu = () => {
                             key={index}
                             style={{ background: "#283039" }}
                             selected={index === selectedIndex}
-                            onClick={(event) => handleMenuItemClick(event, index)}
+                            onClick={(event) => {
+                                handleMenuItemClick(event, index)
+                            }}
                             value={option.name}
                         >
                             {option.icon?.url && <Image src={_generateIpfsHash(option.icon.url)} width={24} height={24} alt={option.name} style={{ marginRight: 8 }} />}
-                            <p style={{ color: "white" }} className={roboto.className}>{option.name}</p>
+                            <p style={{ color: "darkgray" }} className={roboto.className}>{option.name}</p>
                         </MenuItem>
                         <Divider style={{ height: 0.5, margin: 0 }} color={"black"} />
                     </div>

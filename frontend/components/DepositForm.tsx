@@ -102,9 +102,6 @@ const DepositForm = () => {
 
     useEffect(() => {
         if (wallet) {
-            // TODO: Remove these console.logs
-            console.log(`#ContractEvents: ${contractEvents.data?.length}`)
-            console.log(`[UE - Start] EventCount: ${eventCountRef.current}`);
             if (eventCountRef.current !== -1) {
                 const eventData = contractEvents.data?.slice(eventCountRef.current);
                 console.log(eventData)
@@ -137,7 +134,6 @@ const DepositForm = () => {
                 }
             }
             eventCountRef.current = contractEvents.data?.length as number;
-            console.log(`[UE - End] EventCount: ${eventCountRef.current}`);
         }
     }, [contractEvents.dataUpdatedAt])
 
