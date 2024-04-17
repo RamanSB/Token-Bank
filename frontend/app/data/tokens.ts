@@ -5,6 +5,7 @@ const tokens =
         {name: "Ethereum", ticker: "ETH", address: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg"}, 
         {name: "Test", ticker: "Test", address: "0x92bD1071eDC0c38b37396a00Cf16067caBC73D86", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg"}, 
         {name: "KerryToken", ticker: "KTK", address: "0xcf185f2F3Fe19D82bFdcee59E3330FD7ba5f27ce", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg"}, 
+        {name: "Wrapped Ether", ticker: "WETH", address: "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg"}, 
         
     ]
     /* Mainnet: [

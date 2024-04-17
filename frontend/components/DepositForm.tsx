@@ -6,7 +6,7 @@ import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, T
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
 import { MutableRefObject, useContext, useEffect, useRef, useState } from "react";
-import { ADDRESS_ZERO, PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
+import { ADDRESS_ZERO, PreparedTransaction, getContract, hexToBigInt, hexToNumber, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useActiveWallet, useContractEvents } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
@@ -150,6 +150,7 @@ const DepositForm = () => {
     };
 
     function convertToSmallestUnit(amount: string, decimals: number): bigint {
+        console.log(`convertToSmallestUnit(${amount}, ${decimals})`);
         const [integerPart, fractionalPart] = amount.split('.');
         const fractionalAdjusted = (fractionalPart || '').padEnd(decimals, '0').substring(0, decimals);
         const fullAmount = `${integerPart}${fractionalAdjusted}`;
@@ -204,12 +205,15 @@ const DepositForm = () => {
 
                 if (txnResult?.transactionHash) {
                     let receipt = await waitForReceipt({ chain, client, transactionHash: txnResult.transactionHash });
+                    if (receipt.status !== "reverted") {
+                        // TODO: Indicate failure to the user...
+                        return;
+                    }
+                    // TODO: Indicate success to the user...
                     console.log(typeof receipt);
                     console.log(receipt);
                 };
-
             }
-
         } catch (error) {
             console.log(`Error while attempting to perform a deposit: ${error}`)
         } finally {
@@ -217,6 +221,7 @@ const DepositForm = () => {
         }
     }
 
+    // TODO: Set state of allowance amount here, so that user isn't expected to keep changing token to setAllowanceAmount...
     const onApproval = async () => {
         try {
             setIsTxnPending(true);
@@ -231,7 +236,14 @@ const DepositForm = () => {
                 params: [contract.address, approvalAmount]
             });
             const receipt = await sendAndConfirmTransaction({ transaction: txn, account: wallet?.getAccount() as Account });
-            logTxnReceipt(receipt);
+
+            if (receipt.status === "reverted") {
+                return;
+            }
+            const approvalAmountFromLogEvent: bigint = hexToBigInt(receipt.logs[0].data);
+            setAllowanceAmount(approvalAmountFromLogEvent);
+            // TODO: Ideally should be setting if the deposit is enabled here too.
+            // logTxnReceipt(receipt);
         } catch (error) {
             console.log(`Error while attempting to approve ERC20 Token: ${error}`);
         } finally {
@@ -249,7 +261,11 @@ const DepositForm = () => {
         console.log(`TxnReceipt - To: ${receipt.to}`)
         console.log(`TxnReceipt - Type: ${receipt.type}`)
         console.log(`TxnReceipt - logsBloom: ${receipt.logsBloom}`)
-        console.log(`TxnReceipt - logs: ${receipt.logs}`)
+        console.log(`Number of Logs / Events: ${receipt.logs.length}`);
+        for (let logEvent of receipt.logs) {
+            console.log(logEvent.data);
+            console.log(logEvent.logIndex);
+        }
     }
 
     return (<FormControl fullWidth>
