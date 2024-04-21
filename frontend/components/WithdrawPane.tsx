@@ -174,7 +174,7 @@ const WithdrawPane = () => {
                                 <p className={styles.subheaderText} style={{ marginTop: 8 }}>You have 0 active deposits.{"\n"}Begin by depositing a token using the form above.</p>
                                 :
                                 <>
-                                    <List>
+                                    <List style={{ marginTop: 0, maxHeight: 200, overflow: "scroll" }}>
                                         {Array.from(activeDeposits.entries()).map((item: [string, { amount: bigint, decimals?: number }], index: number) => {
                                             if (item[0] === "NativeNetworkToken") {
                                                 // TODO: Leverage current network as the NativeNetworkToken will change amongst different networks.
@@ -208,7 +208,6 @@ const WithdrawPane = () => {
             <Button disabled={!activeWallet || activeDeposits.size === 0} className={styles.withdrawAllBtn} onClick={onWithdrawAll}>
                 {isWithdrawAllTxnLoading ? <CircularProgress /> : "Withdraw All Funds"}
             </Button>
-
         </>)
 }
 

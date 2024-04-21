@@ -11,6 +11,7 @@ import { sepolia } from "thirdweb/chains";
 import { useActiveWallet, useContractEvents } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./DepositForm.module.css";
+import { logTxnReceipt } from "@/app/helper/logs";
 
 
 // TODO: Write logic for depositing Ethereum (doesn't require ERC20 approval, as token is not an ERC20 token.)
@@ -251,22 +252,7 @@ const DepositForm = () => {
         }
     }
 
-    function logTxnReceipt(receipt: any) {
-        console.log(`TxnReceipt: ${receipt}`)
-        console.log(`TxnReceipt - Status: ${receipt.status}`)
-        console.log(`TxnReceipt - Hash: ${receipt.transactionHash}`)
-        console.log(`TxnReceipt - Index: ${receipt.transactionIndex}`)
-        console.log(`TxnReceipt - gasUsed: ${receipt.gasUsed}`)
-        console.log(`TxnReceipt - From: ${receipt.from}`)
-        console.log(`TxnReceipt - To: ${receipt.to}`)
-        console.log(`TxnReceipt - Type: ${receipt.type}`)
-        console.log(`TxnReceipt - logsBloom: ${receipt.logsBloom}`)
-        console.log(`Number of Logs / Events: ${receipt.logs.length}`);
-        for (let logEvent of receipt.logs) {
-            console.log(logEvent.data);
-            console.log(logEvent.logIndex);
-        }
-    }
+
 
     return (<FormControl fullWidth>
         <InputLabel id="token-select-label" style={{ color: 'white' }}>

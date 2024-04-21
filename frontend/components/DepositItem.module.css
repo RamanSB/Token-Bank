@@ -10,3 +10,13 @@
     color: var(--input-field-input-color);
     font-size: 0.8rem;
   }
+
+  .inputField {
+    background-color: #283039; color: white; border-radius: 12px;
+    width: 100%;
+}
+
+.enabled {
+  background: #1a81e4;
+    
+}

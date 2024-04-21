@@ -124,7 +124,6 @@ contract TokenBank {
         return true;
     }
 
-    // TODO: Actually send eth balance back to user ...
     function withdrawAll() external ReEntrancyGuard returns (bool) {
         // Not adhering to CEI - so leverage ReEntrancy Guard.
         uint256 depositedTokenCount = s_depositedTokensByAddress[msg.sender]
