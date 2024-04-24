@@ -11,6 +11,7 @@ import { TOKEN_BANK_CONTRACT_ADDRESS } from "./helper/contract";
 
 import DepositForm from "@/components/DepositForm";
 import WithdrawPane from "@/components/WithdrawPane";
+import { ApiClient } from "./helper/api";
 import styles from "./page.module.css";
 
 
@@ -37,6 +38,19 @@ export const wallets = [
 const Page = () => {
 
   const activeWallet = useActiveWallet();
+  const apiClient = new ApiClient();
+
+  /* useEffect(() => {
+
+    if (!activeWallet) {
+      console.log(`[useEffect] Wallet is undefined.`)
+      return;
+    }
+    console.log(`isAciveWallet: ${activeWallet}`);
+    (async function () { await apiClient.getTokenBalances("eth-mainnet") })();
+
+  }, [activeWallet, chain]); */
+
 
   return (
     <div style={{

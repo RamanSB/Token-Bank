@@ -12,11 +12,21 @@ import { useActiveWallet, useContractEvents } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./DepositForm.module.css";
 import { logTxnReceipt } from "@/app/helper/logs";
+import { ApiClient } from "@/app/helper/api";
+import { TokenData } from "@/app/helper/types";
 
 
 // TODO: Write logic for depositing Ethereum (doesn't require ERC20 approval, as token is not an ERC20 token.)
 // TODO: Write logic for detecting Deposit / Transfer of ERC20 tokens and show user notification of successful / failed Deposit / Approval.
 // When selectedToken is ETH do not show approve, initiate a direct transfer.
+
+const THIRDWEB_TO_ALCHEMY_NETWORK_NAMES = new Map([["Ethereum", "eth-mainnet"], ["Sepolia", "eth-sepolia"], ["Base Sepolia", ""]]);
+const NETWORK_TO_NATIVE_TOKEN = new Map<string, TokenData>([
+    ["Ethereum", { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }],
+    ["Sepolia", { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }],
+    ["Base", { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }],
+    ["Base Sepolia", { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }]
+]);
 
 const DepositForm = () => {
 
@@ -32,6 +42,7 @@ const DepositForm = () => {
 
     const [isDepositEnabled, setIsDepositEnabled] = useState<undefined | boolean>(true);
     const [selectedToken, setSelectedToken] = useState<undefined | string>("Ethereum");
+    const [menuTokenItems, setMenuTokenItems] = useState<TokenData[]>([]);
     const [amount, setAmount] = useState<bigint>(BigInt(0));
     const address = useActiveWallet()?.getAccount()?.address
     const [allowanceAmount, setAllowanceAmount] = useState<bigint>(BigInt(0));
@@ -43,6 +54,7 @@ const DepositForm = () => {
     // TODO: Find out how to pass the event name only without using the entire AbiEvent type.
     const contractEvents = useContractEvents({ contract, events: [] });
     const eventCountRef: MutableRefObject<number> = useRef(-1);
+    const apiClient = new ApiClient();
 
     useEffect(() => {
         const fetchAllowance = async (erc20Address: string) => {
@@ -59,18 +71,22 @@ const DepositForm = () => {
                 setAllowanceAmount(allowance);
                 return allowance;
             } catch (error) {
-                console.log(`Error while attempting to fetch aloowance: ${error}`);
+                console.log(`Error while attempting to fetch allowance: ${error}`);
             }
         };
 
         const fetchDecimals = async (erc20Address: string): Promise<void> => {
-            console.log(`fetchDecimals(${erc20Address})`);
-            const decimals = await readContract({
-                contract: getContract({ client, chain, address: erc20Address }),
-                method: resolveMethod("decimals"),
-                params: []
-            });
-            decimalsRef.current = Number(decimals);
+            try {
+                console.log(`fetchDecimals(${erc20Address})`);
+                const decimals = await readContract({
+                    contract: getContract({ client, chain, address: erc20Address }),
+                    method: resolveMethod("decimals"),
+                    params: []
+                });
+                decimalsRef.current = Number(decimals);
+            } catch (error) {
+                console.log(`Error occurred while attempting to fetch decimals for ${erc20Address}`);
+            }
         };
 
         const fetchBalance = async (erc20Address: string): Promise<void> => {
@@ -85,10 +101,10 @@ const DepositForm = () => {
         }
 
         // TODO: Write Logic here to take care of ETH transfers
-        if (selectedToken === undefined || address === undefined) {
+        if (selectedToken === undefined || address === undefined || menuTokenItems.length === 0) {
             return;
         }
-        const erc20Address: undefined | string = tokens.find((item) => item.name == selectedToken)?.address;
+        const erc20Address: undefined | string = menuTokenItems.find((item) => item.name == selectedToken)?.contractAddress;
         if (!erc20Address) {
             return;
         }
@@ -100,6 +116,38 @@ const DepositForm = () => {
     useEffect(() => {
         console.log(`isDepositEnabled: ${isDepositEnabled}`);
     }, [isDepositEnabled]);
+
+
+    // TODO: Understand why when changing chain, useEffect isn't invoked?
+    useEffect(() => {
+        const fetchUserTokenData = async (chain: string) => {
+            try {
+                console.log(`fetchUserTokenData(${chain})`);
+                let tokenData: TokenData[] = [];
+                if (NETWORK_TO_NATIVE_TOKEN.has(chain)) {
+                    tokenData.push(NETWORK_TO_NATIVE_TOKEN.get(chain) as TokenData);
+                }
+
+                const tokens = await apiClient.getTokenBalances(wallet?.getAccount()?.address as string, THIRDWEB_TO_ALCHEMY_NETWORK_NAMES.get(chain), true)
+                tokenData.push(...tokens);
+                console.log(`Type of TokenData: ${typeof tokenData}`);
+                console.log(tokenData);
+                console.log(`Network native token: ${NETWORK_TO_NATIVE_TOKEN.has(chain)}`)
+                if (tokenData) {
+                    setMenuTokenItems(tokenData);
+                }
+            } catch (error) {
+                console.log(`Error occurred while attempting to fetch token data on ${chain} for ${wallet?.getAccount()?.address}`)
+            }
+        }
+
+        if (!wallet || !chain) {
+            return;
+        }
+
+        fetchUserTokenData(chain.name as string);
+
+    }, [chain, wallet])
 
     useEffect(() => {
         if (wallet) {
@@ -261,16 +309,17 @@ const DepositForm = () => {
         <Select
             labelId="token-select-label"
             id="token-select"
-            style={{ backgroundColor: "#283039", color: "white", width: "100%", borderRadius: 12 }}
+            style={{ backgroundColor: "#283039", color: "white", width: "100%", borderRadius: 12, overflow: "scroll" }}
             label="Select a token"
             displayEmpty
             value={selectedToken}
             onChange={handleTokenChange}
+            MenuProps={{ style: { maxHeight: 400 } }}
         >
-            {tokens.map((item, idx) => {
+            {menuTokenItems.map((item, idx) => {
                 return <MenuItem key={idx} value={item.name}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Image src={item.icon} width={18} height={18} alt={item.icon} />
+                        <Image src={item.icon || "https://etherscan.io/images/svg/brands/ethereum-original.svg"} width={18} height={18} alt={item.name || ""} />
                         {item.ticker} | {item.name}
                     </div>
                 </MenuItem>
