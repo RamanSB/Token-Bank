@@ -2,20 +2,20 @@
 
 import "../app/globals.css";
 
+import { DataContext } from "@/app/contexts/DataContext";
+import tokens from "@/app/data/tokens";
+import { TOKEN_BANK_ADDRESS_BY_CHAIN_ID } from "@/app/helper/contract";
 import DepositItem from "@/components/DepositItem";
 import AcUnitIcon from '@mui/icons-material/AcUnit';
 import { Button, List } from "@mui/material";
-import styles from "./WithdrawPane.module.css";
+import CircularProgress from '@mui/material/CircularProgress';
+import Image from "next/image";
 import { useContext, useEffect, useState } from "react";
-import { DataContext } from "@/app/contexts/DataContext";
 import { PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction } from "thirdweb";
-import { sepolia } from "thirdweb/chains";
+import { Chain } from "thirdweb/chains";
 import { useActiveWallet } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
-import CircularProgress from '@mui/material/CircularProgress';
-import tokens from "@/app/data/tokens";
-import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
-import Image from "next/image";
+import styles from "./WithdrawPane.module.css";
 
 /* TODO:
     1) Ensure Decimals are considered when displaying amount of tokens in Withdraw Pane 
@@ -27,12 +27,8 @@ const WithdrawPane = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isWithdrawAllTxnLoading, setIsWithdrawAllTxnLoading] = useState(false);
     const { client, activeDeposits, setActiveDeposits, isConnected, setIsConnected } = useContext(DataContext);
-    const chain = sepolia;
-    const contract = getContract({
-        client,
-        chain,
-        address: TOKEN_BANK_CONTRACT_ADDRESS,
-    });
+
+
 
     useEffect(() => {
         const fetchTokenAddressesOfActiveDeposits = async (): Promise<string[] | undefined> => {
@@ -42,7 +38,17 @@ const WithdrawPane = () => {
                     console.log(`No active wallet detected.`);
                     return undefined;
                 }
-                const depositedTokenAddresses = await readContract({ contract, method: resolveMethod("getDepositedTokenAddressesByUser"), params: [activeWallet.getAccount()?.address] });
+                const chain: Chain | undefined = activeWallet.getChain();
+                if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                    return;
+                }
+                const depositedTokenAddresses = await readContract({
+                    contract: getContract({
+                        client,
+                        chain,
+                        address: TOKEN_BANK_ADDRESS_BY_CHAIN_ID.get(chain.id) as string,
+                    }), method: resolveMethod("getDepositedTokenAddressesByUser"), params: [activeWallet.getAccount()?.address]
+                });
                 console.log(`DepositedTokenAddresses: ${JSON.stringify(depositedTokenAddresses)}`);
                 return depositedTokenAddresses as string[];
             } catch (error) {
@@ -57,7 +63,17 @@ const WithdrawPane = () => {
                     console.log(`No active wallet detected.`);
                     return undefined;
                 }
-                const balance = await readContract({ contract, method: resolveMethod("getTokenBalanceByAddress"), params: [activeWallet.getAccount()?.address, erc20Address] });
+                const chain: Chain | undefined = activeWallet.getChain();
+                if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                    return;
+                }
+                const balance = await readContract({
+                    contract: getContract({
+                        client,
+                        chain,
+                        address: TOKEN_BANK_ADDRESS_BY_CHAIN_ID.get(chain.id) as string,
+                    }), method: resolveMethod("getTokenBalanceByAddress"), params: [activeWallet.getAccount()?.address, erc20Address]
+                });
                 const decimals = await fetchDecimals(erc20Address);
                 return {
                     amount: BigInt(balance as unknown as bigint),
@@ -71,6 +87,14 @@ const WithdrawPane = () => {
         const fetchDecimals = async (erc20Address: string): Promise<number | undefined> => {
             try {
                 console.log(`fetchDecimals(${erc20Address})`);
+                if (!activeWallet) {
+                    console.log(`No active wallet detected.`);
+                    return undefined;
+                }
+                const chain: Chain | undefined = activeWallet.getChain();
+                if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                    return;
+                }
                 const decimals = await readContract({
                     contract: getContract({ client, chain, address: erc20Address }),
                     method: resolveMethod("decimals"),
@@ -86,8 +110,20 @@ const WithdrawPane = () => {
         const fetchEtherDepositData = async (): Promise<bigint | undefined> => {
             try {
                 console.log(`fetchEtherDepositData()`);
+                if (!activeWallet) {
+                    console.log(`No active wallet detected.`);
+                    return undefined;
+                }
+                const chain: Chain | undefined = activeWallet.getChain();
+                if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                    return;
+                }
                 const userEthBalance = await readContract({
-                    contract,
+                    contract: getContract({
+                        client,
+                        chain,
+                        address: TOKEN_BANK_ADDRESS_BY_CHAIN_ID.get(chain.id) as string,
+                    }),
                     method: resolveMethod("getEtherBalanceByAddress"),
                     params: [activeWallet?.getAccount()?.address],
                 });
@@ -131,18 +167,30 @@ const WithdrawPane = () => {
         fetchAndSetActiveDeposits();
         setIsConnected(Boolean(activeWallet)); // If wallet is connected should be true otherwise should be false.
 
-    }, [activeWallet]);
+    }, [activeWallet, activeWallet?.getChain()?.id]);
 
 
     const onWithdrawAll = async () => {
         try {
-            setIsWithdrawAllTxnLoading(true);
             console.log(`onWithdrawAll()`);
+            setIsWithdrawAllTxnLoading(true);
+            if (!activeWallet) {
+                console.log(`No active wallet detected.`);
+                return undefined;
+            }
+            const chain: Chain | undefined = activeWallet.getChain();
+            if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                return;
+            }
             if (!isConnected) {
                 console.warn(`User must be connect wallet before attempting to withdraw funds`);
             }
             const txn: PreparedTransaction<any> = prepareContractCall({
-                contract,
+                contract: getContract({
+                    client,
+                    chain,
+                    address: TOKEN_BANK_ADDRESS_BY_CHAIN_ID.get(chain.id) as string,
+                }),
                 method: resolveMethod("withdrawAll"),
                 params: []
             });

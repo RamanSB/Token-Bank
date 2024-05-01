@@ -1,4 +1,20 @@
-export const TOKEN_BANK_CONTRACT_ADDRESS = "0x155B79d1Aa17e021bD495f99305aC2DeDEe958de";
+import { base, baseSepolia, ethereum, sepolia } from "thirdweb/chains";
+import { TokenData } from "./types";
+
+export const SEPOLIA_TOKEN_BANK_CONTRACT_ADDRESS = "0x155B79d1Aa17e021bD495f99305aC2DeDEe958de";
+export const BASE_TOKEN_BANK_CONTRACT_ADDRESS = "0x3e01A0F684c0B3Af7b5a151cb0958b01B082BeF8";
+
+export const TOKEN_BANK_ADDRESS_BY_CHAIN_ID = new Map<number, string>([[base.id, BASE_TOKEN_BANK_CONTRACT_ADDRESS], [sepolia.id, SEPOLIA_TOKEN_BANK_CONTRACT_ADDRESS]]);
+
+export const NETWORK_TO_NATIVE_TOKEN = new Map<number, TokenData>([
+    [ethereum.id, { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }],
+    [sepolia.id, { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }],
+    [base.id, { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }],
+    [baseSepolia.id, { name: "Ethereum", ticker: "ETH", contractAddress: "", icon: "https://etherscan.io/images/svg/brands/ethereum-original.svg", decimals: 18 }]
+]);
+
+export const THIRDWEB_CHAIN_ID_TO_ALCHEMY_NETWORK_NAMES = new Map<number, string>([[ethereum.id, "eth-mainnet"], [sepolia.id, "eth-sepolia"], [base.id, "base-mainnet"]]);
+
 export const ABI = [
     {
         "inputs": [],

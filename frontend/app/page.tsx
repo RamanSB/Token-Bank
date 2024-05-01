@@ -1,31 +1,18 @@
 "use client";
-import { useEffect } from "react";
-import { createThirdwebClient, getContract } from "thirdweb";
-import { sepolia } from "thirdweb/chains";
-
-import { ConnectButton, useActiveWallet, useActiveWalletChain } from "thirdweb/react";
-import { createWallet } from "thirdweb/wallets";
-import { roboto } from "./fonts";
-import "./globals.css";
-import { TOKEN_BANK_CONTRACT_ADDRESS } from "./helper/contract";
+import { createThirdwebClient } from "thirdweb";
 
 import DepositForm from "@/components/DepositForm";
 import WithdrawPane from "@/components/WithdrawPane";
+import { ConnectButton, useActiveWalletChain } from "thirdweb/react";
+import { createWallet } from "thirdweb/wallets";
+import { roboto } from "./fonts";
+import "./globals.css";
 import styles from "./page.module.css";
 
 
 const client = createThirdwebClient({
   clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string
 })
-
-const chain = sepolia; // sepolia;
-
-const contract = getContract({
-  client,
-  chain,
-  address: TOKEN_BANK_CONTRACT_ADDRESS,
-  // abi: ABI as Abi // Optional, comment it - if it breaks.
-});
 
 export const wallets = [
   createWallet("io.metamask"),
@@ -35,8 +22,6 @@ export const wallets = [
 
 
 const Page = () => {
-
-  const activeWallet = useActiveWallet();
 
   return (
     <div style={{

@@ -1,17 +1,19 @@
 "use client";
 import { DataContext } from "@/app/contexts/DataContext";
 import tokens from "@/app/data/tokens";
-import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
+import { NETWORK_TO_NATIVE_TOKEN, THIRDWEB_CHAIN_ID_TO_ALCHEMY_NETWORK_NAMES, TOKEN_BANK_ADDRESS_BY_CHAIN_ID } from "@/app/helper/contract";
+import { logTxnReceipt } from "@/app/helper/logs";
 import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
 import { MutableRefObject, useContext, useEffect, useRef, useState } from "react";
-import { ADDRESS_ZERO, PreparedTransaction, getContract, hexToBigInt, hexToNumber, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
-import { sepolia } from "thirdweb/chains";
+import { ADDRESS_ZERO, PreparedTransaction, getContract, hexToBigInt, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
+import { Chain } from "thirdweb/chains";
 import { useActiveWallet, useContractEvents } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./DepositForm.module.css";
-import { logTxnReceipt } from "@/app/helper/logs";
+import { ApiClient } from "@/app/helper/api";
+import { TokenData } from "@/app/helper/types";
 
 
 // TODO: Write logic for depositing Ethereum (doesn't require ERC20 approval, as token is not an ERC20 token.)
@@ -20,19 +22,11 @@ import { logTxnReceipt } from "@/app/helper/logs";
 
 const DepositForm = () => {
 
-    const { client, setActiveDeposits } = useContext(DataContext);
-    const chain = sepolia;
-
-    const contract = getContract({
-        client,
-        chain,
-        address: TOKEN_BANK_CONTRACT_ADDRESS,
-        //  abi: ABI as Abi // Optional, comment it - if it breaks.
-    });
-
+    const { client, setActiveDeposits, contract } = useContext(DataContext);
     const [isDepositEnabled, setIsDepositEnabled] = useState<undefined | boolean>(true);
     const [selectedToken, setSelectedToken] = useState<undefined | string>("Ethereum");
     const [amount, setAmount] = useState<bigint>(BigInt(0));
+    const [menuTokenItems, setMenuTokenItems] = useState<TokenData[]>([]);
     const address = useActiveWallet()?.getAccount()?.address
     const [allowanceAmount, setAllowanceAmount] = useState<bigint>(BigInt(0));
     const [showApproval, setShowApproval] = useState(false);
@@ -43,12 +37,20 @@ const DepositForm = () => {
     // TODO: Find out how to pass the event name only without using the entire AbiEvent type.
     const contractEvents = useContractEvents({ contract, events: [] });
     const eventCountRef: MutableRefObject<number> = useRef(-1);
+    const apiClient = new ApiClient();
+
 
     useEffect(() => {
         const fetchAllowance = async (erc20Address: string) => {
             try {
                 console.log(`fetchAllowance(${erc20Address})`);
-                console.log([address, contract.address, erc20Address])
+                if (!wallet) {
+                    return;
+                }
+                const chain: Chain | undefined = wallet.getChain();
+                if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                    return;
+                }
                 const allowance = await readContract({
                     contract: getContract({ client, chain, address: erc20Address }),
                     method: "function allowance(address owner, address spender) returns (uint256)",
@@ -59,29 +61,51 @@ const DepositForm = () => {
                 setAllowanceAmount(allowance);
                 return allowance;
             } catch (error) {
-                console.log(`Error while attempting to fetch aloowance: ${error}`);
+                console.log(`Error while attempting to fetch allowance: ${error}`);
             }
         };
 
         const fetchDecimals = async (erc20Address: string): Promise<void> => {
-            console.log(`fetchDecimals(${erc20Address})`);
-            const decimals = await readContract({
-                contract: getContract({ client, chain, address: erc20Address }),
-                method: resolveMethod("decimals"),
-                params: []
-            });
-            decimalsRef.current = Number(decimals);
+            try {
+                console.log(`fetchDecimals(${erc20Address})`);
+                if (!wallet) {
+                    return;
+                }
+                const chain: Chain | undefined = wallet.getChain();
+                if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                    return;
+                }
+                const decimals = await readContract({
+                    contract: getContract({ client, chain, address: erc20Address }),
+                    method: resolveMethod("decimals"),
+                    params: []
+                });
+                decimalsRef.current = Number(decimals);
+            } catch (error) {
+                console.log(`Error occurred while attempting to fetch decimals for ${erc20Address}`);
+            }
         };
 
         const fetchBalance = async (erc20Address: string): Promise<void> => {
-            console.log(`fetchBalance(${erc20Address})`);
-            const balance = await readContract({
-                contract: getContract({ client, chain, address: erc20Address }),
-                method: resolveMethod("balanceOf"),
-                params: [address]
-            })
+            try {
+                console.log(`fetchBalance(${erc20Address})`);
+                if (!wallet) {
+                    return;
+                }
+                const chain: Chain | undefined = wallet.getChain();
+                if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                    return;
+                }
+                const balance = await readContract({
+                    contract: getContract({ client, chain, address: erc20Address }),
+                    method: resolveMethod("balanceOf"),
+                    params: [address]
+                })
 
-            erc20TokenBalanceRef.current = BigInt(balance as unknown as bigint);
+                erc20TokenBalanceRef.current = BigInt(balance as unknown as bigint);
+            } catch (error) {
+                console.log(`Error attempting to fetch balance for ${erc20Address}: ${error}`);
+            }
         }
 
         // TODO: Write Logic here to take care of ETH transfers
@@ -98,8 +122,35 @@ const DepositForm = () => {
     }, [selectedToken]);
 
     useEffect(() => {
-        console.log(`isDepositEnabled: ${isDepositEnabled}`);
-    }, [isDepositEnabled]);
+        const fetchUserTokenData = async (chainId: number) => {
+            try {
+                console.log(`fetchUserTokenData(${chainId})`);
+                let tokenData: TokenData[] = [];
+                if (NETWORK_TO_NATIVE_TOKEN.has(chainId)) {
+                    tokenData.push(NETWORK_TO_NATIVE_TOKEN.get(chainId) as TokenData);
+                }
+
+                const tokens = await apiClient.getTokenBalances(wallet?.getAccount()?.address as string, THIRDWEB_CHAIN_ID_TO_ALCHEMY_NETWORK_NAMES.get(chainId), true)
+                tokenData.push(...tokens);
+                if (tokenData) {
+                    setMenuTokenItems(tokenData);
+                }
+            } catch (error) {
+                console.log(`Error occurred while attempting to fetch token data on ${chain} for ${wallet?.getAccount()?.address}`)
+            }
+        }
+
+        if (!wallet) {
+            return;
+        }
+        const chain: Chain | undefined = wallet.getChain();
+        if (!chain) {
+            return;
+        }
+
+        fetchUserTokenData(chain.id);
+
+    }, [wallet?.getChain()?.id])
 
     useEffect(() => {
         if (wallet) {
@@ -183,6 +234,13 @@ const DepositForm = () => {
         try {
             setIsTxnPending(true);
             console.log(`onDeposit(): ${selectedToken} | ${amount}`);
+            if (!wallet) {
+                return;
+            }
+            const chain: Chain | undefined = wallet.getChain();
+            if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                return;
+            }
             // Handle all ERC20 tokens
             if (selectedToken !== "Ethereum") {
                 const erc20Address = tokens.find((item) => item.name === selectedToken)?.address as string;
@@ -200,7 +258,7 @@ const DepositForm = () => {
             } else {
                 // Handle Ethereums case seperately (Ether does not have a contract address).
                 console.log(`${wallet?.getAccount()?.address} is sending ETH...`);
-                const txnResult = await wallet?.getAccount()?.sendTransaction({ chainId: chain.id, to: TOKEN_BANK_CONTRACT_ADDRESS, value: amount });
+                const txnResult = await wallet?.getAccount()?.sendTransaction({ chainId: chain.id, to: TOKEN_BANK_ADDRESS_BY_CHAIN_ID.get(chain.id), value: amount });
                 console.log(typeof txnResult);
                 console.log(txnResult);
 
@@ -222,11 +280,18 @@ const DepositForm = () => {
         }
     }
 
-    // TODO: Set state of allowance amount here, so that user isn't expected to keep changing token to setAllowanceAmount...
+
     const onApproval = async () => {
         try {
-            setIsTxnPending(true);
             console.log(`onApproval(): ${selectedToken}`);
+            setIsTxnPending(true);
+            if (!wallet) {
+                return;
+            }
+            const chain: Chain | undefined = wallet.getChain();
+            if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
+                return;
+            }
             const erc20Address = tokens.find((item) => item.name === selectedToken)?.address as string
             const approvalAmount: bigint = BigInt(erc20TokenBalanceRef.current) * BigInt(10 ** (decimalsRef.current as number));
             console.log([address, contract.address, erc20Address])
@@ -261,16 +326,17 @@ const DepositForm = () => {
         <Select
             labelId="token-select-label"
             id="token-select"
-            style={{ backgroundColor: "#283039", color: "white", width: "100%", borderRadius: 12 }}
+            style={{ backgroundColor: "#283039", color: "white", width: "100%", borderRadius: 12, overflow: "scroll" }}
             label="Select a token"
             displayEmpty
             value={selectedToken}
             onChange={handleTokenChange}
+            MenuProps={{ style: { maxHeight: 400 } }}
         >
-            {tokens.map((item, idx) => {
+            {menuTokenItems.map((item, idx) => {
                 return <MenuItem key={idx} value={item.name}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Image src={item.icon} width={18} height={18} alt={item.icon} />
+                        <Image src={item.icon || "https://etherscan.io/images/svg/brands/ethereum-original.svg"} width={18} height={18} alt={item.name || ""} />
                         {item.ticker} | {item.name}
                     </div>
                 </MenuItem>

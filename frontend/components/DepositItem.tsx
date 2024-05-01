@@ -7,7 +7,7 @@ import tokens from "@/app/data/tokens";
 import { ChangeEvent, useContext, useState } from "react";
 import { roboto } from "@/app/fonts";
 import { Chain, PreparedTransaction, getContract, prepareContractCall, prepareTransaction, resolveMethod, sendTransaction, waitForReceipt } from "thirdweb";
-import { TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
+import { SEPOLIA_TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
 import { DataContext } from "@/app/contexts/DataContext";
 import { useActiveWallet, useActiveWalletChain } from "thirdweb/react";
 import { sepolia } from "thirdweb/chains";
@@ -27,7 +27,7 @@ const DepositItem: React.FC<DepositItemProps> = ({ icon, ticker, amount, dollarA
     const { client, activeDeposits, setActiveDeposits } = useContext(DataContext);
     // Retrieve chain from Context
     const chain: Chain = useActiveWalletChain() || sepolia;
-    const contract = getContract({ client, chain, address: TOKEN_BANK_CONTRACT_ADDRESS })
+    const contract = getContract({ client, chain, address: SEPOLIA_TOKEN_BANK_CONTRACT_ADDRESS })
     const wallet: Wallet | undefined = useActiveWallet();
     const [open, setOpen] = useState(false);
     const [isWithdrawEnabled, setIsWithdrawEnabled] = useState(false);
@@ -36,8 +36,7 @@ const DepositItem: React.FC<DepositItemProps> = ({ icon, ticker, amount, dollarA
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
     const token = tokens.find((item) => item.ticker === ticker);
-    const validWithdrawInput = /^\d+?.\d+$/;
-
+    const validWithdrawInput = /^\d+(\.\d+)?$/;
     console.log(amount);
     console.log(BigInt(10 ** decimals));
     const formattedBalance = divideBigInts(amount, BigInt(10 ** decimals), 4);
