@@ -37,7 +37,7 @@ const NetworkMenu = () => {
         } else { // Active chain but it can't be found.
             setSelectedIndex(-2);
         }
-    }, [activeChain])
+    }, [activeChain, chains])
 
     const open = Boolean(anchorEl)
     const handleClickListItem = (event: MouseEvent<HTMLElement>) => {

@@ -50,7 +50,7 @@ const DataContextProvider: React.FC<ProviderProps> = ({ children }) => {
         console.log(`Detected chain ${chain.id}`);
         const contractOnChain = getContract({ client, chain, address: TOKEN_BANK_ADDRESS_BY_CHAIN_ID.get(chain.id) as string });
         setContract(contractOnChain);
-    }, [chain?.id])
+    }, [chain?.id, chain])
 
     return <DataContext.Provider value={{ activeDeposits, setActiveDeposits, isConnected, setIsConnected, contract, setContract, client }}>
         {children}

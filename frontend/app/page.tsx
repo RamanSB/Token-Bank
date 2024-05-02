@@ -14,14 +14,16 @@ const client = createThirdwebClient({
   clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string
 })
 
-export const wallets = [
-  createWallet("io.metamask"),
-  createWallet("com.coinbase.wallet"),
-  createWallet("app.phantom"),
-];
 
 
 const Page = () => {
+
+  const wallets = [
+    createWallet("io.metamask"),
+    createWallet("com.coinbase.wallet"),
+    createWallet("app.phantom"),
+  ];
+
 
   return (
     <div style={{
