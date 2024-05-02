@@ -1,5 +1,4 @@
-import axios, { Axios } from "axios";
-import { hexToBigInt, hexToNumber, hexToString } from "thirdweb";
+import { Axios } from "axios";
 
 export interface IApiClient {
 
@@ -8,7 +7,6 @@ export interface IApiClient {
 export class ApiClient implements IApiClient {
 
     _axios: Axios;
-
 
     constructor() {
         this._axios = new Axios({ headers: { "Content-Type": "application/json", "Accept": "application/json" } });

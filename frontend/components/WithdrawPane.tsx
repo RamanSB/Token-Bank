@@ -12,9 +12,9 @@ import { Button, List } from "@mui/material";
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
 import { useContext, useEffect, useState } from "react";
-import { NATIVE_TOKEN_ADDRESS, PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction } from "thirdweb";
+import { PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction } from "thirdweb";
 import { Chain } from "thirdweb/chains";
-import { useActiveWallet, useActiveWalletChain } from "thirdweb/react";
+import { useActiveWallet } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./WithdrawPane.module.css";
 
