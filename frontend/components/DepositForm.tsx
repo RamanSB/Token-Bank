@@ -1,6 +1,5 @@
 "use client";
 import { DataContext } from "@/app/contexts/DataContext";
-import tokens from "@/app/data/tokens";
 import { NETWORK_TO_NATIVE_TOKEN, THIRDWEB_CHAIN_ID_TO_ALCHEMY_NETWORK_NAMES, TOKEN_BANK_ADDRESS_BY_CHAIN_ID } from "@/app/helper/contract";
 import { logTxnReceipt } from "@/app/helper/logs";
 import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
@@ -34,8 +33,9 @@ const DepositForm = () => {
     const erc20TokenBalanceRef = useRef<bigint>(BigInt(0));
     const wallet: Wallet | undefined = useActiveWallet();
     const [isTxnPending, setIsTxnPending] = useState(false);
-    // TODO: Find out how to pass the event name only without using the entire AbiEvent type.
-    const contractEvents = useContractEvents({ contract, events: [] });
+    // TODO: Understand how events can be retreived when we are changing the contract...
+    const contractEvents = useContractEvents({ contract })
+
     const eventCountRef: MutableRefObject<number> = useRef(-1);
     const apiClient = new ApiClient();
 
@@ -112,7 +112,7 @@ const DepositForm = () => {
         if (selectedToken === undefined || address === undefined) {
             return;
         }
-        const erc20Address: undefined | string = tokens.find((item) => item.name == selectedToken)?.address;
+        const erc20Address: undefined | string = menuTokenItems.find((item) => item.name == selectedToken)?.contractAddress;
         if (!erc20Address) {
             return;
         }
@@ -190,7 +190,7 @@ const DepositForm = () => {
     }, [contractEvents.dataUpdatedAt])
 
     const handleTokenChange = async (event: SelectChangeEvent<any>) => {
-        console.log(`handleChange(${JSON.stringify(event.target)})`);
+        console.log(`handleTokenChange(${JSON.stringify(event.target)})`);
         const token = event.target.value;
         setSelectedToken(event.target.value);
         if (token === "Ethereum") {
@@ -243,7 +243,7 @@ const DepositForm = () => {
             }
             // Handle all ERC20 tokens
             if (selectedToken !== "Ethereum") {
-                const erc20Address = tokens.find((item) => item.name === selectedToken)?.address as string;
+                const erc20Address = menuTokenItems.find((item) => item.name === selectedToken)?.contractAddress as string;
                 const txnAmount = amount;
                 const txn: PreparedTransaction = prepareContractCall({
                     contract,
@@ -292,7 +292,7 @@ const DepositForm = () => {
             if (!chain || !TOKEN_BANK_ADDRESS_BY_CHAIN_ID.has(chain.id)) {
                 return;
             }
-            const erc20Address = tokens.find((item) => item.name === selectedToken)?.address as string
+            const erc20Address = menuTokenItems.find((item) => item.name === selectedToken)?.contractAddress as string
             const approvalAmount: bigint = BigInt(erc20TokenBalanceRef.current) * BigInt(10 ** (decimalsRef.current as number));
             console.log([address, contract.address, erc20Address])
 

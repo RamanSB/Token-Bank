@@ -1,33 +1,29 @@
 "use client";
 
-import { Box, Button, CircularProgress, Icon, IconButton, Input, InputAdornment, Modal, TextField, Typography } from "@mui/material";
-import styles from "./DepositItem.module.css";
-import { divideBigInts, multiplyBigInts } from "../app/helper/maths";
-import tokens from "@/app/data/tokens";
-import { ChangeEvent, useContext, useState } from "react";
-import { roboto } from "@/app/fonts";
-import { Chain, PreparedTransaction, getContract, prepareContractCall, prepareTransaction, resolveMethod, sendTransaction, waitForReceipt } from "thirdweb";
-import { SEPOLIA_TOKEN_BANK_CONTRACT_ADDRESS } from "@/app/helper/contract";
 import { DataContext } from "@/app/contexts/DataContext";
-import { useActiveWallet, useActiveWalletChain } from "thirdweb/react";
-import { sepolia } from "thirdweb/chains";
-import { Account, Wallet } from "thirdweb/wallets";
+import { roboto } from "@/app/fonts";
 import { logTxnReceipt } from "@/app/helper/logs";
+import { TokenData } from "@/app/helper/types";
+import { Box, Button, CircularProgress, InputAdornment, Modal, TextField } from "@mui/material";
+import { ChangeEvent, useContext, useState } from "react";
+import { PreparedTransaction, prepareContractCall, resolveMethod, sendTransaction, waitForReceipt } from "thirdweb";
+import { useActiveWallet } from "thirdweb/react";
+import { Account, Wallet } from "thirdweb/wallets";
+import { divideBigInts, multiplyBigInts } from "../app/helper/maths";
+import styles from "./DepositItem.module.css";
 
 export type DepositItemProps = {
     icon: any // TODO: Find the correct type
     ticker: string,
     amount: bigint,
     dollarAmount: number,
-    decimals: number
+    decimals: number,
+    tokenMetadata: TokenData[]
 }
 
-const DepositItem: React.FC<DepositItemProps> = ({ icon, ticker, amount, dollarAmount, decimals }) => {
+const DepositItem: React.FC<DepositItemProps> = ({ icon, ticker, amount, dollarAmount, decimals, tokenMetadata }) => {
 
-    const { client, activeDeposits, setActiveDeposits } = useContext(DataContext);
-    // Retrieve chain from Context
-    const chain: Chain = useActiveWalletChain() || sepolia;
-    const contract = getContract({ client, chain, address: SEPOLIA_TOKEN_BANK_CONTRACT_ADDRESS })
+    const { activeDeposits, setActiveDeposits, contract } = useContext(DataContext);
     const wallet: Wallet | undefined = useActiveWallet();
     const [open, setOpen] = useState(false);
     const [isWithdrawEnabled, setIsWithdrawEnabled] = useState(false);
@@ -35,7 +31,7 @@ const DepositItem: React.FC<DepositItemProps> = ({ icon, ticker, amount, dollarA
     const [isTxnPending, setIsTxnPending] = useState(false);
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
-    const token = tokens.find((item) => item.ticker === ticker);
+    const token = tokenMetadata.find((item: TokenData) => item.ticker === ticker);
     const validWithdrawInput = /^\d+(\.\d+)?$/;
     console.log(amount);
     console.log(BigInt(10 ** decimals));
@@ -62,13 +58,12 @@ const DepositItem: React.FC<DepositItemProps> = ({ icon, ticker, amount, dollarA
                 return;
             }
 
-            let erc20Address = token.address;
+            let erc20Address = token.contractAddress;
             const amount: undefined | bigint = multiplyBigInts(withdrawAmount, decimals);
             if (!amount) {
                 throw new Error(`Unable to determine amount from ${withdrawAmount} & ${decimals}`);
             }
             console.log(`withdrawAmount: ${amount}`);
-            console.log(amount);
             let txn: PreparedTransaction;
             if (erc20Address === "") {
                 // Native Token 

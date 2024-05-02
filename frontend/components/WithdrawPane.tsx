@@ -3,17 +3,18 @@
 import "../app/globals.css";
 
 import { DataContext } from "@/app/contexts/DataContext";
-import tokens from "@/app/data/tokens";
-import { TOKEN_BANK_ADDRESS_BY_CHAIN_ID } from "@/app/helper/contract";
+import { ApiClient } from "@/app/helper/api";
+import { NETWORK_TO_NATIVE_TOKEN, THIRDWEB_CHAIN_ID_TO_ALCHEMY_NETWORK_NAMES, TOKEN_BANK_ADDRESS_BY_CHAIN_ID } from "@/app/helper/contract";
+import { TokenData } from "@/app/helper/types";
 import DepositItem from "@/components/DepositItem";
-import AcUnitIcon from '@mui/icons-material/AcUnit';
+import CurrencyBitcoinIcon from '@mui/icons-material/CurrencyBitcoin';
 import { Button, List } from "@mui/material";
 import CircularProgress from '@mui/material/CircularProgress';
 import Image from "next/image";
 import { useContext, useEffect, useState } from "react";
-import { PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction } from "thirdweb";
+import { NATIVE_TOKEN_ADDRESS, PreparedTransaction, getContract, prepareContractCall, readContract, resolveMethod, sendAndConfirmTransaction } from "thirdweb";
 import { Chain } from "thirdweb/chains";
-import { useActiveWallet } from "thirdweb/react";
+import { useActiveWallet, useActiveWalletChain } from "thirdweb/react";
 import { Account, Wallet } from "thirdweb/wallets";
 import styles from "./WithdrawPane.module.css";
 
@@ -27,7 +28,8 @@ const WithdrawPane = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isWithdrawAllTxnLoading, setIsWithdrawAllTxnLoading] = useState(false);
     const { client, activeDeposits, setActiveDeposits, isConnected, setIsConnected } = useContext(DataContext);
-
+    const [tokenMetadata, setTokenMetadata] = useState<TokenData[]>()
+    const apiClient = new ApiClient();
 
 
     useEffect(() => {
@@ -144,6 +146,7 @@ const WithdrawPane = () => {
                     return;
                 }
                 const tempMap = new Map<string, { amount: bigint, decimals?: number }>([]);
+                let tokenMetadata = [];
                 for (let i = 0; i < tokenAddresses.length; i++) {
                     const tokenData = await fetchTokenDataForAddress(tokenAddresses[i]);
                     if (!tokenData) {
@@ -151,7 +154,14 @@ const WithdrawPane = () => {
                     }
                     console.log(`Token balance for ${tokenAddresses[i]}: ${tokenData['amount']} - ${tokenData['decimals']}`);
                     tempMap.set(tokenAddresses[i], tokenData);
+                    const { decimals, logo, name, symbol } = await apiClient.getTokenMetadata(tokenAddresses[i], THIRDWEB_CHAIN_ID_TO_ALCHEMY_NETWORK_NAMES.get(activeWallet?.getChain()?.id as number));
+                    tokenMetadata.push({ decimals, icon: logo, name, ticker: symbol, contractAddress: tokenAddresses[i] });
                 }
+                const networkNativeToken: TokenData | undefined = NETWORK_TO_NATIVE_TOKEN.get(activeWallet?.getChain()?.id as number);
+                if (networkNativeToken) {
+                    tokenMetadata.push(networkNativeToken);
+                }
+                setTokenMetadata(tokenMetadata);
                 const ethBalance: bigint | undefined = await fetchEtherDepositData();
                 if (ethBalance) {
                     tempMap.set("NativeNetworkToken", { amount: ethBalance, decimals: 18 });
@@ -165,7 +175,7 @@ const WithdrawPane = () => {
         }
 
         fetchAndSetActiveDeposits();
-        setIsConnected(Boolean(activeWallet)); // If wallet is connected should be true otherwise should be false.
+        setIsConnected(Boolean(activeWallet)); // TODO: Remove this? If wallet is connected should be true otherwise should be false.
 
     }, [activeWallet, activeWallet?.getChain()?.id]);
 
@@ -226,12 +236,11 @@ const WithdrawPane = () => {
                                         {Array.from(activeDeposits.entries()).map((item: [string, { amount: bigint, decimals?: number }], index: number) => {
                                             if (item[0] === "NativeNetworkToken") {
                                                 // TODO: Leverage current network as the NativeNetworkToken will change amongst different networks.
-                                                console.log(`NativeNetworkToken..`);
-                                                const token = tokens.find(token => token.address === "");
-                                                console.log(token);
-                                                return <DepositItem key={index} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={18} icon={<Image src={token?.icon as string} height={32} width={32} alt="" />} />
+                                                console.log(`Item - Name: ${JSON.stringify(item[0])}`);
+                                                const networkNativeToken: TokenData | undefined = NETWORK_TO_NATIVE_TOKEN.get(activeWallet.getChain()?.id as number);
+                                                return <DepositItem key={index} amount={item[1]['amount']} ticker={networkNativeToken?.ticker || ""} dollarAmount={0} decimals={18} icon={<Image src={"https://etherscan.io/images/svg/brands/ethereum-original.svg"} height={32} width={32} alt="" />} tokenMetadata={tokenMetadata as TokenData[]} />
                                             }
-                                            const token = tokens.find(token => token.address == item[0]);
+                                            const token = tokenMetadata?.find((token: TokenData) => token.contractAddress == item[0]);
                                             if (!token) {
                                                 console.log(`Unable to find token: ${item[0]}`);
                                             }
@@ -239,7 +248,7 @@ const WithdrawPane = () => {
                                             if (!decimals) {
                                                 console.log(`Unable to determine decimals for ${item[0]}: ${decimals}`);
                                             }
-                                            return <DepositItem key={index} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={decimals as number} icon={<AcUnitIcon />} />
+                                            return <DepositItem key={index} amount={item[1]['amount']} ticker={token?.ticker || ""} dollarAmount={0} decimals={decimals as number} icon={<CurrencyBitcoinIcon />} tokenMetadata={tokenMetadata as TokenData[]} />
                                         })}
                                     </List>
                                 </>

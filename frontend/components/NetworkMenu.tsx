@@ -14,7 +14,7 @@ import { useActiveWalletChain, useSwitchActiveWalletChain } from "thirdweb/react
 const NetworkMenu = () => {
     const switchChain = useSwitchActiveWalletChain();
     const activeChain = useActiveWalletChain();
-    const chains: Chain[] = [sepolia, baseSepolia, base]; /* arbitrumNova */;
+    const chains: Chain[] = [sepolia, base]; /* arbitrumNova */;
     const [chainMetadata, setChainMetdata] = useState<any>(undefined);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedIndex, setSelectedIndex] = useState(-1);
