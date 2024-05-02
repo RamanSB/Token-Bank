@@ -17,4 +17,9 @@
 body {
   background-color: var(--main-bg-color);
   color: var(--text-color);
+  max-width: 640px;
+  min-width: 380px;
+  width: 460px;
+  margin: auto;
+  
 }

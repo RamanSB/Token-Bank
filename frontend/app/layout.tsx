@@ -24,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={roboto.className}>
+        <link rel="icon" href="/helper/icon.png" sizes="any" />
         <Providers>
           <Navbar />
           {children}

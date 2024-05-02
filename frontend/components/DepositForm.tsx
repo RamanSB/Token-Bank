@@ -33,7 +33,8 @@ const DepositForm = () => {
     const erc20TokenBalanceRef = useRef<bigint>(BigInt(0));
     const wallet: Wallet | undefined = useActiveWallet();
     const [isTxnPending, setIsTxnPending] = useState(false);
-    // TODO: Understand how events can be retreived when we are changing the contract...
+    // TODO: There is an error here when switching to the base chain, it seems like values used within this hook (namely block number) are not being updated...
+    // Understand how events can be retreived when we are changing the contract
     const contractEvents = useContractEvents({ contract })
 
     const eventCountRef: MutableRefObject<number> = useRef(-1);
