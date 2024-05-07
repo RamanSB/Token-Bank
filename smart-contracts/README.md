@@ -1,3 +1,17 @@
+# Token Bank
+
+Token Bank is a simple blockchain application that provides users with the ability to deposit and withdraw any particular ERC20 token as well as the native network token.
+
+## Contracts
+- *TokenBank.sol*:
+- *forge-std/src/interfaces/IERC20.sol*
+
+## Deployed Contracts
+
+- **Base**: [TokenBank on Base](https://basescan.org/address/0x3e01a0f684c0b3af7b5a151cb0958b01b082bef8)
+- **Seplolia**: [TokenBank on Sepolia](https://sepolia.etherscan.io/address/0x155B79d1Aa17e021bD495f99305aC2DeDEe958de)
+
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**

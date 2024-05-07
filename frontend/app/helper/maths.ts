@@ -7,15 +7,13 @@ export const divideBigInts = (a: bigint, b: bigint, precision: number): string =
     balanceString.length > precision
       ? balanceString.slice(0, -precision) + '.' + balanceString.slice(-precision)
       : '0.' + balanceString.padStart(precision, '0');
-  console.log(`formattedBalance components: ${formattedBalance}`);
+
   return formattedBalance;
 }
 
 
 export const multiplyBigInts = (val: string | number, decimals: number): bigint | undefined => {
   try {
-    console.log(`multiplyBigInts(${val}, ${decimals})`);
-
     if (Number.isNaN(Number(val))) {
       console.log(`${val} is NaN`);
       return undefined;

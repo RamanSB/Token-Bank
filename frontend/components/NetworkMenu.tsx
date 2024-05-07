@@ -51,7 +51,8 @@ const NetworkMenu = () => {
         }
         setSelectedIndex(index);
         setAnchorEl(null);
-        switchChain(chains[index])
+
+        switchChain(chains[index]);
     }
 
     const handleClose = () => {

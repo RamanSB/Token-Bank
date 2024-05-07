@@ -1,8 +1,19 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+TokenBank is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
 
-First, run the development server:
+Prior to running the development server ensure you have sourced the appropriate environment variables, you will need:
+
+- 1) A thirdweb account for the Client ID and Secret Key
+- 2) Alchemy account for an ETH Sepolia API KEY to use in the project as we rely on alchemys' API.
+
+<code>
+NEXT_PUBLIC_THIRDWEB_CLIENT_ID 
+NEXT_PUBLIC_THIRDWEB_SECRET_KEY
+NEXT_PUBLIC_ALCHEMY_ETHEREUM_SEPOLIA_API_KEY 
+</code>
+
+Then run the development server:
 
 ```bash
 npm run dev

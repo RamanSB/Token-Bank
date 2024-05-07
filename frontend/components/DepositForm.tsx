@@ -157,12 +157,7 @@ const DepositForm = () => {
         if (wallet) {
             if (eventCountRef.current !== -1) {
                 const eventData = contractEvents.data?.slice(eventCountRef.current);
-                console.log(eventData)
-                console.log(eventData?.length)
-                console.log(typeof eventData);
                 const event: any = eventData?.findLast((event: any) => event.eventName === "TokenBank__Deposit" && event.args.depositor === wallet.getAccount()?.address);
-                console.log(event);
-                console.log(typeof event);
                 if (event) {
                     const { depositor, amount }: { depositor: string, amount: bigint } = event.args;
                     let { erc20TokenAddress }: { erc20TokenAddress: string } = event.args;
