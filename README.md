@@ -1,13 +1,16 @@
 # TokenBank
 
-TokenBank is a decentralized application (dApp) that allows users to manage their ERC-20 tokens securely and efficiently. Deployed on Sepolia (Testnet) and Base (Mainnet), it offers functionalities such as depositing, withdrawing, and viewing ERC-20 token balances directly through a user-friendly interface.
+[TokenBank](https://token-bank.vercel.app/) is a decentralized application (dApp) that allows users to manage their ERC-20 tokens securely and efficiently. Deployed on Sepolia (Testnet) and Base (Mainnet), it offers functionalities such as depositing, withdrawing, and viewing ERC-20 token balances directly through a user-friendly interface.
 
 [TokenBank Video Demo](https://github.com/RamanSB/Token-Bank/assets/13969478/076b84d3-22b1-4311-afbc-f01fe230e2c1)
 
+Deployed by Vercel @ https://token-bank.vercel.app/ by **ramansb100@gmail.com**
 
-<img src="frontend/public/token-bank-sepolia.png" width="300" height="600" alt="Token Bank on Sepolia"/>
-<img src="frontend/public/token-bank-base.png" width="300" height="600" alt="Token Bank on Base"/>
-
+<div>
+  <img src="frontend/public/token-bank-sepolia.png" style="float: left; margin-right: 10px;" width="300" height="600" alt="Image 1">
+  <img src="frontend/public/token-bank-base.png" style="float: left;" width="300" height="600"  alt="Image 2">
+</div>
+<div style="clear: both;"></div>
 
 ## Development & Issues
 
@@ -42,3 +45,5 @@ Setup and installation for both the frontend / smart-contracts can be found in t
 git clone https://github.com/RamanSB/tokenbank.git
 cd tokenbank
 ```
+
+
